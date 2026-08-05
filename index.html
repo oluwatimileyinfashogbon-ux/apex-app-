@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0A0A0A">
+    
+    <link rel="manifest" href='data:application/manifest+json,{"name":"Apex Video Generator","short_name":"Apex AI","start_url":"/","display":"standalone","background_color":"#0A0A0A","theme_color":"#0A0A0A","orientation":"portrait"}'>
+
+    <title>Apex Video Generator | Unlocked AI Generation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg-color: #0A0A0A;
+            --gold: #D4AF37;
+            --text-light: #F0F0F0;
+            --card-bg: #111111;
+            --gold-glow: 0 0 15px rgba(212, 175, 55, 0.4);
+            --gold-glow-strong: 0 0 25px rgba(212, 175, 55, 0.7);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-light); line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; }
+        .gold-text { color: var(--gold); }
+        h1, h2, h3 { font-weight: 700; letter-spacing: 1px; }
+        
+        /* --- ANIME LOGO ANIMATION STYLES --- */
+        @keyframes animeLogoGlow {
+            0% {
+                text-shadow: 0 0 10px rgba(212, 175, 55, 0.6), 0 0 20px rgba(212, 175, 55, 0.3);
+                transform: scale(1);
+            }
+            50% {
+                text-shadow: 0 0 20px rgba(212, 175, 55, 1), 0 0 35px rgba(255, 215, 0, 0.8), 0 0 50px rgba(255, 140, 0, 0.6);
+                transform: scale(1.04);
+            }
+            100% {
+                text-shadow: 0 0 10px rgba(212, 175, 55, 0.6), 0 0 20px rgba(212, 175, 55, 0.3);
+                transform: scale(1);
+            }
+        }
+
+        @keyframes pulseParticle {
+            0% { transform: rotate(0deg) scale(1); box-shadow: 0 0 10px #D4AF37; }
+            50% { transform: rotate(180deg) scale(1.2); box-shadow: 0 0 25px #FFD700; }
+            100% { transform: rotate(360deg) scale(1); box-shadow: 0 0 10px #D4AF37; }
+        }
+
+        .logo { 
+            font-size: 1.5rem; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            letter-spacing: 2px; 
+            cursor: pointer; 
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: animeLogoGlow 2.5s infinite ease-in-out;
+            transition: all 0.3s ease;
+        }
+
+        .logo-particle {
+            width: 12px;
+            height: 12px;
+            background: var(--gold);
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+            animation: pulseParticle 3s infinite linear;
+        }
+
+        .logo:hover {
+            filter: brightness(1.3);
+        }
+        /* ---------------------------------- */
+
+        nav {
+            padding: 1.5rem 5%; display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2); background: rgba(10, 10, 10, 0.95);
+            position: sticky; top: 0; z-index: 100;
+        }
+        .nav-links { display: flex; align-items: center; }
+        .nav-links button {
+            background: none; border: none; color: var(--text-light); margin-left: 2rem;
+            font-size: 1rem; font-weight: 600; cursor: pointer; transition: color 0.3s;
+        }
+        .nav-links button:hover { color: var(--gold); }
+        .btn {
+            background: transparent; color: var(--gold); border: 2px solid var(--gold);
+            padding: 0.8rem 2rem; font-size: 1rem; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 1px; cursor: pointer; border-radius: 4px; transition: all 0.3s ease;
+            box-shadow: var(--gold-glow); text-decoration: none; display: inline-block; text-align: center;
+        }
+        .btn:hover { background: var(--gold); color: var(--bg-color); box-shadow: var(--gold-glow-strong); }
+        .page { display: none; padding: 4rem 5%; flex-grow: 1; animation: fadeIn 0.5s ease; }
+        .page.active { display: block; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        #home { text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: calc(100vh - 80px); padding-top: 2rem; padding-bottom: 2rem; }
+        #home h1 { font-size: 4rem; margin-bottom: 1rem; }
+        #home p { font-size: 1.2rem; margin-bottom: 2.5rem; color: #999; }
+        
+        .promo-banner {
+            background: linear-gradient(90deg, rgba(212,175,55,0.2) 0%, rgba(17,17,17,1) 100%);
+            border: 1px solid var(--gold); padding: 1rem 2rem; border-radius: 8px; margin-bottom: 2rem; text-align: center; width: 100%; max-width: 800px;
+        }
+
+        .pricing-grid { display: flex; justify-content: center; gap: 2rem; margin-top: 3rem; flex-wrap: wrap; }
+        .pricing-card {
+            background: var(--card-bg); border: 1px solid rgba(212, 175, 55, 0.3); padding: 2.5rem 2rem;
+            border-radius: 8px; width: 260px; text-align: center; transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .pricing-card:hover { transform: translateY(-10px); box-shadow: var(--gold-glow); }
+        .pricing-card h3 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+        .pricing-card .price { font-size: 2.5rem; color: var(--gold); margin-bottom: 1rem; }
+        .pricing-card ul { list-style: none; margin-bottom: 2rem; color: #BBB; font-size: 0.9rem; }
+        .pricing-card ul li { margin-bottom: 0.5rem; }
+        .pricing-card .badge {
+            display: inline-block; background: var(--gold); color: #000; padding: 0.2rem 0.8rem;
+            border-radius: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 1rem;
+        }
+        .auth-container {
+            max-width: 400px; margin: 0 auto; background: var(--card-bg); padding: 3rem; border-radius: 8px;
+            border: 1px solid var(--gold); box-shadow: var(--gold-glow); text-align: center;
+        }
+        .auth-container input {
+            width: 100%; padding: 1rem; margin-bottom: 1rem; background: #000; border: 1px solid #333; color: #FFF; border-radius: 4px;
+        }
+        .auth-container input:focus { outline: none; border-color: var(--gold); }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; margin-top: 2rem; }
+        .dash-card { background: var(--card-bg); padding: 2rem; border-radius: 8px; border-left: 4px solid var(--gold); }
+        .badge {
+            display: inline-block; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem;
+            font-weight: 700; text-transform: uppercase; margin-top: 1rem; background: var(--gold); color: var(--bg-color);
+        }
+        .toggle-switch {
+            display: flex; align-items: center; justify-content: space-between; background: #000;
+            padding: 0.8rem; border-radius: 6px; border: 1px solid #333; margin-top: 1rem;
+        }
+        .switch { position: relative; display: inline-block; width: 44px; height: 22px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; transition: .4s; border-radius: 22px; }
+        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--gold); }
+        input:checked + .slider:before { transform: translateX(22px); }
+        .hidden { display: none; }
+        .text-center { text-align: center; }
+
+        /* Mobile optimization fix */
+        @media (max-width: 768px) {
+            nav { flex-direction: column; gap: 1rem; padding: 1rem; }
+            .nav-links { flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+            .nav-links button { margin-left: 0; font-size: 0.9rem; padding: 0.4rem 0.8rem; }
+            #home h1 { font-size: 2.3rem; }
+            #home p { font-size: 1rem; }
+            .pricing-card { width: 100%; max-width: 300px; }
+        }
+
+        .queue-container { background: var(--card-bg); border: 1px solid var(--gold); border-radius: 8px; padding: 2rem; margin-top: 2rem; text-align: center; }
+        .queue-badge { display: inline-block; background: var(--gold); color: #000; padding: 0.5rem 1.5rem; border-radius: 20px; font-weight: 700; font-size: 1.2rem; }
+        .queue-progress { width: 100%; height: 10px; background: #222; border-radius: 10px; margin: 1rem 0; overflow: hidden; }
+        .queue-progress-bar { height: 100%; background: var(--gold); width: 0%; transition: width 0.5s ease; }
+        .queue-status { font-size: 0.9rem; color: #999; }
+        .user-counter { text-align: center; margin: 20px 0; padding: 15px; background: #111; border: 1px solid var(--gold); border-radius: 8px; }
+        .user-counter p { color: #999; font-size: 0.9rem; }
+        .user-counter .count { color: var(--gold); font-size: 2rem; font-weight: 700; }
+        .user-counter .spots { color: #666; font-size: 0.8rem; }
+        .user-counter .spots-low { color: #FF4444; font-size: 0.8rem; font-weight: 700; }
+        
+        #global-error-alert {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
+            background: #2d1215; border: 1px solid #ef4444; color: #fca5a5; padding: 12px 24px;
+            border-radius: 8px; z-index: 9999; transition: transform 0.3s ease; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            font-size: 0.9rem; display: flex; align-items: center; gap: 10px;
+        }
+        #global-error-alert.show { transform: translateX(-50%) translateY(0); }
+    </style>
+</head>
+<body>
+
+<div id="global-error-alert">
+    <span>⚠️</span> <span id="error-msg-text">Generation failed. Don't worry, your credits were not deducted. Please try again.</span>
+</div>
+
+<nav>
+    <div class="logo gold-text" onclick="navigate('home')">
+        <span class="logo-particle"></span>
+        <span>APEX</span>
+    </div>
+    <div class="nav-links" id="nav-links">
+        <button onclick="navigate('pricing')">Pricing</button>
+        <button onclick="navigate('auth')" id="nav-login">Login / Sign Up</button>
+        <button onclick="navigate('dashboard')" id="nav-dash" class="hidden">Dashboard</button>
+        <button onclick="logout()" id="nav-logout" class="hidden">Logout</button>
+    </div>
+</nav>
+
+<div id="home" class="page active">
+    <div class="promo-banner">
+        <span>👾 <strong>Discord & Kling AI Creator Offer:</strong> Zero Watermarks + Automated Queue Priority</span>
+    </div>
+   
+    <h1>AI Videos.<br><span class="gold-text">No Credit Stress.</span></h1>
+    <p>Seamless Auto-Refill. Cinematic Wan AI Engine. 100% Watermark Free.</p>
+    <button class="btn" onclick="navigate('pricing')">Start Free Trial</button>
+</div>
+
+<div id="pricing" class="page">
+    <h2 class="text-center">Choose Your <span class="gold-text">Plan</span></h2>
+    <div class="pricing-grid">
+        <div class="pricing-card">
+            <h3>Free Trial</h3>
+            <div class="price">$0</div>
+            <ul>
+                <li>🔹 2 videos trial</li>
+                <li>🔹 720p HD</li>
+                <li>🔹 Standard queue</li>
+                <li>✨ <strong>No Watermark</strong></li>
+            </ul>
+            <button class="btn" onclick="navigate('auth')">Get Started</button>
+        </div>
+        <div class="pricing-card">
+            <h3>Starter</h3>
+            <div class="price">$19<span style="font-size:1rem">/mo</span></div>
+            <ul>
+                <li>🔹 25 videos/mo</li>
+                <li>🔹 720p HD</li>
+                <li>🔹 Standard queue</li>
+                <li>✨ <strong>No Watermark</strong></li>
+            </ul>
+            <button class="btn" style="width:100%;" onclick="openCheckout('Starter', 19)">Pay with USDC</button>
+        </div>
+        <div class="pricing-card">
+            <div class="badge">🔥 Most Popular</div>
+            <h3>Pro</h3>
+            <div class="price">$35<span style="font-size:1rem">/mo</span></div>
+            <ul>
+                <li>🔹 65 videos/mo</li>
+                <li>🔹 1080p Full HD</li>
+                <li>🔹 Priority queue</li>
+                <li>✨ <strong>No Watermark</strong></li>
+            </ul>
+            <button class="btn" style="width:100%;" onclick="openCheckout('Pro', 35)">Pay with USDC</button>
+        </div>
+        <div class="pricing-card">
+            <div class="badge">👑 Best Value</div>
+            <h3>Premium</h3>
+            <div class="price">$59<span style="font-size:1rem">/mo</span></div>
+            <ul>
+                <li>🔹 140 videos/mo</li>
+                <li>🔹 1080p Full HD</li>
+                <li>🔹 Lightning queue</li>
+                <li>✨ <strong>Auto-Recharge Enabled</strong></li>
+            </ul>
+            <button class="btn" style="width:100%;" onclick="openCheckout('Premium', 59)">Pay with USDC</button>
+        </div>
+    </div>
+</div>
+
+<div id="auth" class="page">
+    <div class="auth-container">
+        <h2 style="margin-bottom:2rem;">Access <span class="gold-text">APEX</span></h2>
+        <input type="email" id="email" placeholder="Email Address" required>
+        <input type="password" id="password" placeholder="Password" required>
+        <input type="date" id="birthday" placeholder="Birthday" required>
+        <button class="btn" style="width:100%; margin-top:1rem;" onclick="handleAuth()">Enter Portal</button>
+        <p style="margin-top:1rem;font-size:0.8rem;color:#777;">Creates account if it doesn't exist.</p>
+    </div>
+</div>
+
+<div id="dashboard" class="page">
+    <h2>Welcome, <span class="gold-text" id="dash-email">User</span></h2>
+
+    <div class="user-counter">
+        <p>👑 Apex Founders Club</p>
+        <p class="count"><span id="liveUserCount">0</span> / 650</p>
+        <p class="spots">Only <span id="spotsLeft">650</span> spots left — claim your spot!</p>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="dash-card">
+            <h3>📊 Current Plan</h3>
+            <h1 class="gold-text" style="margin:1rem 0;" id="plan-name">Free Trial</h1>
+            <p id="bday-message" class="gold-text" style="font-size:0.9rem;"></p>
+            <p style="font-size:0.8rem;color:#999;"><span id="videos-used">0</span> / <span id="video-limit">2</span> videos used</p>
+            
+            <div class="toggle-switch">
+                <span style="font-size:0.85rem; color:#DDD;">⚡ Auto-Top Up (Zero Stop)</span>
+                <label class="switch">
+                    <input type="checkbox" id="autoRechargeToggle" onchange="toggleAutoRecharge(this.checked)">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        <div class="dash-card">
+            <h3>🎁 Referral Program</h3>
+            <p style="margin:1rem 0;font-size:0.85rem;color:#BBB;">Get $2 off per paid subscriber referred (Max $10 off).</p>
+            <div style="background:#000;padding:1rem;border:1px solid #333;word-break:break-all;" id="ref-link"></div>
+            <div style="margin-top:1rem;"><strong>Paid Referrals: </strong> <span class="gold-text" id="ref-count">0</span></div>
+            <div style="margin-top:0.5rem;"><strong>Discount: </strong> <span class="gold-text" id="discount-earned">$0</span></div>
+        </div>
+        <div class="dash-card">
+            <h3>🏆 Tournament Status</h3>
+            <p style="font-size:0.75rem;color:#888;margin-bottom:0.5rem;">Unlocks on paid user subscriptions:</p>
+            <div id="tourney-badge" class="badge">Unranked</div>
+            <ul style="margin-top:1rem;font-size:0.85rem;color:#BBB;list-style:none;">
+                <li>🥉 Bronze (10 Paid): 1 Month Free</li>
+                <li>🥈 Silver (25 Paid): 3 Months Free</li>
+                <li>🥇 Gold (50 Paid): 6 Months Free</li>
+                <li>👑 Champion (100 Paid): Lifetime Free</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="queue-container" id="queue-container">
+        <h3>🎬 Unlocked Video Generation Engine</h3>
+        <input type="text" id="prompt-input" placeholder="Describe your video prompt (e.g. A neon supercar in Vice City at night)..." style="width:100%;padding:0.8rem;background:#000;border:1px solid #333;color:#FFF;border-radius:4px;margin-bottom:1rem;">
+        <div style="margin:1rem 0;">
+            <span class="queue-badge" id="queue-position">0</span>
+            <span style="color:#999;margin-left:0.5rem;">people ahead in queue</span>
+        </div>
+        <div class="queue-progress"><div class="queue-progress-bar" id="queue-progress-bar"></div></div>
+        <div class="queue-status" id="queue-status">Ready to generate</div>
+        <button class="btn" style="margin-top:1rem;" onclick="addToQueue()">🎬 Generate Video</button>
+        <div id="video-result" style="margin-top:1rem;"></div>
+    </div>
+</div>
+
+<footer style="max-width: 800px; margin: 40px auto 20px auto; padding: 0 5%; width: 100%; color: #888; font-size: 0.85rem; border-top: 1px solid rgba(212,175,55,0.1); padding-top: 20px;">
+    <h3 style="color: var(--gold); font-size: 1rem; margin-bottom: 10px;">Quick FAQ & Support</h3>
+    <ul style="list-style: none; margin-bottom: 10px;">
+        <li style="margin-bottom: 6px;"><strong style="color: #ccc;">How do credits work?</strong> Each generation counts toward your tier limit. If a render fails, your credits are safe.</li>
+        <li><strong style="color: #ccc;">Need help?</strong> Contact support directly at <a href="mailto:jamestimmy882@gmail.com" style="color: var(--gold); text-decoration: underline;">jamestimmy882@gmail.com</a></li>
+    </ul>
+    <p style="font-size: 0.75rem; color: #555;">&copy; 2026 Apex AI. All rights reserved.</p>
+</footer>
+
+<div id="checkout-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #111; border: 1px solid var(--gold); border-radius: 12px; width: 100%; max-width: 450px; padding: 24px; position: relative;">
+        <button onclick="closeCheckoutModal()" style="position: absolute; top: 15px; right: 15px; background: transparent; border: none; color: #aaa; font-size: 1.2rem; cursor: pointer;">✕</button>
+        <h3 style="color: var(--gold); margin-bottom: 5px;">USDC Checkout</h3>
+        <p id="checkout-plan-text" style="color: #aaa; font-size: 0.9rem; margin-bottom: 15px;"></p>
+
+        <div style="background: #1a1a1a; padding: 15px; border-radius: 8px; border: 1px solid #333; margin-bottom: 15px; text-align: left;">
+            <p style="font-size: 0.8rem; color: #888; margin-bottom: 5px;">Send exact amount via <strong>Solana Network</strong>:</p>
+            <div style="background: #000; padding: 10px; word-break: break-all; border-radius: 4px; font-family: monospace; font-size: 0.85rem; color: var(--gold); margin-bottom: 8px;">
+                3xBDWD1H8QobDy3FAxydQcdgkdqBejDHJfJEiL2UEFXa
+            </div>
+            <button onclick="copyWalletAddress()" style="background: #222; color: #fff; border: 1px solid #444; padding: 6px 12px; border-radius: 4px; font-size: 0.8rem; cursor: pointer;">📋 Copy Address</button>
+        </div>
+
+        <div style="background: rgba(255, 68, 68, 0.1); border: 1px solid #FF4444; padding: 10px; border-radius: 6px; font-size: 0.75rem; color: #ff9999; margin-bottom: 15px;">
+            ⚠️ <strong>Important:</strong> Only send USDC on the <strong>Solana</strong> network. After sending, paste your transaction hash (TxID) below or contact support.
+        </div>
+
+        <input type="text" id="tx-hash-input" placeholder="Paste Solana Transaction Hash (TxID)..." style="width: 100%; background: #222; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 0.85rem;">
+        
+        <button onclick="submitPaymentProof()" style="width: 100%; background: var(--gold); color: #000; font-weight: 700; border: none; padding: 12px; border-radius: 6px; cursor: pointer;">I Have Sent Payment</button>
+        <div id="payment-success-msg" style="display: none; color: #4EFE80; text-align: center; margin-top: 12px; font-weight: 600; font-size: 0.9rem;">
+            ✓ Payment proof submitted! We will activate your plan shortly.
+        </div>
+    </div>
+</div>
+
+<button id="feedback-trigger-btn" onclick="openFeedbackModal()" style="position: fixed; bottom: 20px; right: 20px; z-index: 999; background: var(--gold); color: #000; font-weight: 700; border: none; padding: 12px 18px; border-radius: 30px; cursor: pointer; box-shadow: 0 4px 15px rgba(212,175,55,0.4);">
+    💬 Feedback
+</button>
+
+<div id="feedback-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #111; border: 1px solid var(--gold); border-radius: 12px; width: 100%; max-width: 420px; padding: 24px; position: relative;">
+        <button onclick="closeFeedbackModal()" style="position: absolute; top: 15px; right: 15px; background: transparent; border: none; color: #aaa; font-size: 1.2rem; cursor: pointer;">✕</button>
+        <h3 style="color: var(--gold); margin-bottom: 8px;">Share Your Feedback</h3>
+        <p style="color: #aaa; font-size: 0.85rem; margin-bottom: 12px;">
+            Help us make Apex better! Or email us directly at 
+            <a href="mailto:jamestimmy882@gmail.com" style="color: var(--gold); font-weight: bold; text-decoration: underline;">jamestimmy882@gmail.com</a>
+        </p>
+
+        <form id="feedback-form" onsubmit="handleFeedbackSubmit(event)">
+            <label style="color: #ccc; font-size: 0.8rem; display: block; margin-bottom: 6px;">Category</label>
+            <select id="fb-category" style="width: 100%; background: #222; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 6px; margin-bottom: 14px;">
+                <option value="Feature Request">💡 Feature Request</option>
+                <option value="Bug Report">🐛 Bug / Issue</option>
+                <option value="Model Request">🤖 New AI Model Request</option>
+                <option value="General">💬 General Thoughts</option>
+            </select>
+
+            <label style="color: #ccc; font-size: 0.8rem; display: block; margin-bottom: 6px;">Message</label>
+            <textarea id="fb-message" required rows="4" placeholder="Tell us what's on your mind..." style="width: 100%; background: #222; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 6px; margin-bottom: 16px; resize: none;"></textarea>
+
+            <button type="submit" style="width: 100%; background: var(--gold); color: #000; font-weight: 700; border: none; padding: 12px; border-radius: 6px; cursor: pointer;">Send Feedback</button>
+        </form>
+
+        <div id="fb-success-msg" style="display: none; color: #4EFE80; text-align: center; margin-top: 15px; font-weight: 600;">
+            ✓ Thank you! Your feedback has been sent.
+        </div>
+    </div>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://hjvpwwpmztwkwteixcbv.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_kT9pTrB3XaEH69KWAP-e2g_pGSROk9e';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const PLANS = {
+        free: { name: 'Free Trial', price: 0, videosPerMonth: 2, queuePriority: 1 },
+        starter: { name: 'Starter', price: 19, videosPerMonth: 25, queuePriority: 1 },
+        pro: { name: 'Pro', price: 35, videosPerMonth: 65, queuePriority: 2 },
+        premium: { name: 'Premium', price: 59, videosPerMonth: 140, queuePriority: 3 }
+    };
+
+    function showErrorToast(message) {
+        const toast = document.getElementById('global-error-alert');
+        const msgText = document.getElementById('error-msg-text');
+        if (message) msgText.textContent = message;
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 4000);
+    }
+
+    function navigate(pageId) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+        if (pageId === 'dashboard') loadDashboard();
+    }
+
+    function openCheckout(planName, price) {
+        document.getElementById('checkout-plan-text').innerHTML = `You selected the <strong>${planName} Plan</strong>. Please send <strong>$${price} USDC</strong> to our Solana address below.`;
+        document.getElementById('checkout-modal').style.display = 'flex';
+        document.getElementById('payment-success-msg').style.display = 'none';
+        document.getElementById('tx-hash-input').value = '';
+    }
+
+    function closeCheckoutModal() {
+        document.getElementById('checkout-modal').style.display = 'none';
+    }
+
+    function copyWalletAddress() {
+        navigator.clipboard.writeText('3xBDWD1H8QobDy3FAxydQcdgkdqBejDHJfJEiL2UEFXa');
+        alert('Solana USDC address copied to clipboard!');
+    }
+
+    async function submitPaymentProof() {
+        const txHash = document.getElementById('tx-hash-input').value.trim();
+        const userEmail = localStorage.getItem('apexCurrentUser') || 'Anonymous';
+
+        if (!txHash) {
+            showErrorToast('Please enter your transaction hash (TxID).');
+            return;
+        }
+
+        try {
+            if (typeof supabase !== 'undefined' && supabase) {
+                await supabase.from('payment_proofs').insert([{ user_email: userEmail, tx_hash: txHash, date: new Date().toISOString() }]);
+            }
+        } catch (err) {
+            console.error('Error recording payment proof:', err);
+        }
+
+        document.getElementById('payment-success-msg').style.display = 'block';
+        setTimeout(() => {
+            closeCheckoutModal();
+        }, 2500);
+    }
+
+    async function handleAuth() {
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const birthdayVal = document.getElementById('birthday').value;
+
+        if (!email || !password) {
+            showErrorToast('Please enter email and password.');
+            return;
+        }
+
+        try {
+            let { data, error } = await supabase.auth.signInWithPassword({ email: email, password: password });
+            if (error && error.message.includes('Invalid login credentials')) {
+                const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email: email, password: password });
+                if (signUpError) { showErrorToast('Sign up error: ' + signUpError.message); return; }
+                data = signUpData;
+                const refCode = 'REF_' + Math.random().toString(36).substring(2, 8).toUpperCase();
+                await supabase.from('users').insert([
+                    {
+                        email: email, plan: 'free', videos_used: 0, referrals: 0, ref_code: refCode,
+                        auto_recharge: false, birthday: birthdayVal || null, last_active: new Date().toISOString()
+                    }
+                ]);
+            } else if (error) {
+                showErrorToast('Login error: ' + error.message); return;
+            }
+
+            if (data && data.user) {
+                localStorage.setItem('apexCurrentUser', data.user.email);
+                updateNavState(true);
+                navigate('dashboard');
+            }
+        } catch (err) {
+            showErrorToast('Error: ' + err.message);
+        }
+    }
+
+    async function logout() {
+        await supabase.auth.signOut();
+        localStorage.removeItem('apexCurrentUser');
+        updateNavState(false);
+        navigate('home');
+    }
+
+    function updateNavState(isLoggedIn) {
+        document.getElementById('nav-login').classList.toggle('hidden', isLoggedIn);
+        document.getElementById('nav-dash').classList.toggle('hidden', !isLoggedIn);
+        document.getElementById('nav-logout').classList.toggle('hidden', !isLoggedIn);
+    }
+
+    async function toggleAutoRecharge(enabled) {
+        const currentEmail = localStorage.getItem('apexCurrentUser');
+        if (!currentEmail) return;
+
+        try {
+            await supabase.from('users').update({ auto_recharge: enabled }).eq('email', currentEmail);
+        } catch (e) {
+            console.error('Error updating auto recharge state:', e);
+        }
+    }
+
+    async function loadDashboard() {
+        const currentEmail = localStorage.getItem('apexCurrentUser');
+        if (!currentEmail) { navigate('auth'); return; }
+
+        try {
+            await supabase.from('users').update({ last_active: new Date().toISOString() }).eq('email', currentEmail);
+        } catch (e) {
+            console.warn('Could not update activity timestamp:', e);
+        }
+
+        let { data: user, error } = await supabase.from('users').select('*').eq('email', currentEmail).single();
+        if (!user && !error) {
+            const refCode = 'REF_' + Math.random().toString(36).substring(2, 8).toUpperCase();
+            const { data: newUser } = await supabase.from('users').insert([
+                { email: currentEmail, plan: 'free', videos_used: 0, referrals: 0, ref_code: refCode, auto_recharge: false, last_active: new Date().toISOString() }
+            ]).select().single();
+            user = newUser;
+        }
+
+        const bdayMsgEl = document.getElementById('bday-message');
+        if (user && user.birthday) {
+            const today = new Date();
+            const [bYear, bMonth, bDay] = user.birthday.split('-');
+            if (today.getMonth() + 1 === parseInt(bMonth) && today.getDate() === parseInt(bDay)) {
+                bdayMsgEl.innerHTML = "🎉 Happy Birthday from APEX! Wish you a great year ahead.";
+            } else {
+                bdayMsgEl.innerHTML = "";
+            }
+        } else {
+            bdayMsgEl.innerHTML = "";
+        }
+
+        const plan = PLANS[user?.plan || 'free'];
+
+        document.getElementById('dash-email').innerText = currentEmail.split('@')[0];
+        document.getElementById('plan-name').innerText = plan.name;
+        document.getElementById('ref-link').innerText = 'apex.com/ref/' + (user?.ref_code || 'N/A');
+        document.getElementById('ref-count').innerText = user?.referrals || 0;
+        document.getElementById('discount-earned').innerText = '$' + Math.min((user?.referrals || 0) * 2, 10);
+        document.getElementById('videos-used').innerText = user?.videos_used || 0;
+        document.getElementById('video-limit').innerText = plan.videosPerMonth;
+        document.getElementById('autoRechargeToggle').checked = !!user?.auto_recharge;
+
+        let badge = 'Unranked', color = '#777';
+        if ((user?.referrals || 0) >= 100) { badge = 'Champion'; color = '#E5E4E2'; }
+        else if ((user?.referrals || 0) >= 50) { badge = 'Gold'; color = '#D4AF37'; }
+        else if ((user?.referrals || 0) >= 25) { badge = 'Silver'; color = '#C0C0C0'; }
+        else if ((user?.referrals || 0) >= 10) { badge = 'Bronze'; color = '#CD7F32'; }
+        
+        const badgeEl = document.getElementById('tourney-badge');
+        badgeEl.innerText = badge;
+        badgeEl.style.background = color;
+        badgeEl.style.color = (badge === 'Champion' || badge === 'Silver') ? '#000' : '#FFF';
+
+        updateUserCount();
+        window._currentUser = currentEmail;
+    }
+
+    async function updateUserCount() {
+        try {
+            const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+            const { count, error } = await supabase.from('users').select('*', { count: 'exact', head: true }).gte('last_active', ninetyDaysAgo);
+            if (!error) {
+                const total = count || 0;
+                const maxUsers = 650;
+                const spotsLeft = maxUsers - total;
+
+                document.getElementById('liveUserCount').textContent = total;
+                const spotsEl = document.getElementById('spotsLeft');
+                spotsEl.textContent = spotsLeft > 0 ? spotsLeft : 0;
+
+                if (spotsLeft <= 50) {
+                    spotsEl.className = 'spots-low';
+                    spotsEl.textContent = `🔥 ONLY ${spotsLeft} LEFT!`;
+                } else {
+                    spotsEl.className = 'spots';
+                }
+            }
+        } catch (e) {
+            console.warn('User count error:', e);
+        }
+    }
+
+    let videoQueue = [];
+    let isProcessing = false;
+
+    async function addToQueue() {
+        const currentEmail = localStorage.getItem('apexCurrentUser');
+        if (!currentEmail) { showErrorToast('Please login first!'); return; }
+
+        const prompt = document.getElementById('prompt-input').value.trim();
+        
+        if (!prompt) {
+            showErrorToast('⚠️ Please enter a video prompt before generating.');
+            return;
+        }
+        
+        if (videoQueue.some(item => item.email === currentEmail)) {
+            showErrorToast('You already have a video in queue!');
+            return;
+        }
+
+        let resolution = '720p';
+        try {
+            const { data: user } = await supabase.from('users').select('plan').eq('email', currentEmail).single();
+            if (user && (user.plan === 'pro' || user.plan === 'premium')) {
+                resolution = '1080p';
+            }
+        } catch (err) {
+            console.warn('Could not fetch user plan for resolution, defaulting to 720p:', err);
+        }
+
+        videoQueue.push({ email: currentEmail, prompt: prompt, resolution: resolution, timestamp: Date.now() });
+        document.getElementById('prompt-input').value = '';
+        updateQueueUI();
+        if (!isProcessing) processQueue();
+    }
+
+    async function processQueue() {
+        if (videoQueue.length === 0) {
+            isProcessing = false;
+            document.getElementById('queue-status').textContent = '✅ Ready to generate';
+            return;
+        }
+
+        isProcessing = true;
+        const currentItem = videoQueue[0];
+        const currentEmail = currentItem.email;
+
+        document.getElementById('queue-status').textContent = `🎬 Rendering video for ${currentEmail}...`;
+        document.getElementById('queue-position').textContent = videoQueue.length - 1;
+
+        try {
+            const response = await fetch('/api/generate-video', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    prompt: currentItem.prompt,
+                    resolution: currentItem.resolution
+                })
+            });
+            const data = await response.json();
+
+            if (data.success && data.videoUrl) {
+                videoQueue.shift();
+                document.getElementById('video-result').innerHTML = `
+                    <div style="background:#1a1a1a;padding:1rem;border-radius:8px;border:1px solid var(--gold);text-align:center;">
+                        <p style="color:var(--gold);font-weight:700;margin-bottom:0.5rem;">✅ Video Ready (${data.resolutionUsed || '720p'})!</p>
+                        <video controls style="width:100%;max-height:300px;border-radius:8px;margin-bottom:1rem;" src="${data.videoUrl}"></video>
+                        <button class="btn" onclick="downloadVideo('${data.videoUrl}')" style="width:100%; padding: 1rem; font-size: 1.1rem;">
+                            📥 Download MP4 Clip
+                        </button>
+                    </div>
+                `;
+                document.getElementById('queue-status').textContent = '✅ Video ready!';
+            } else {
+                showErrorToast('⚠️ Generation failed. Your credits are safe.');
+                document.getElementById('queue-status').textContent = '❌ Generation failed.';
+                videoQueue.shift();
+            }
+
+        } catch (error) {
+            console.error('Generation error:', error);
+            showErrorToast('⚠️ Connection error occurred. Credits safe.');
+            document.getElementById('queue-status').textContent = '❌ Connection error.';
+            videoQueue.shift();
+        }
+
+        loadDashboard();
+        setTimeout(processQueue, 2000);
+    }
+
+    function updateQueueUI() {
+        const position = videoQueue.length;
+        document.getElementById('queue-position').textContent = position;
+        const progress = position > 0 ? 100 - ((position - 1) / 10 * 100) : 100;
+        const clampedProgress = Math.max(0, Math.min(progress, 100));
+        document.getElementById('queue-progress-bar').style.width = clampedProgress + '%';
+        if (position > 0) {
+            const waitTime = Math.ceil(position * 1.2);
+            document.getElementById('queue-status').textContent = `⏳ ~${waitTime} mins remaining (${position} video${position > 1 ? 's' : ''} ahead)`;
+        }
+    }
+
+    async function downloadVideo(videoUrl) {
+        try {
+            const response = await fetch(videoUrl);
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = `Apex_AI_${Date.now()}.mp4`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(blobUrl);
+        } catch (err) {
+            console.error("Direct download failed, opening clip directly:", err);
+            window.open(videoUrl, '_blank');
+        }
+    }
+
+    function openFeedbackModal() {
+        document.getElementById('feedback-modal').style.display = 'flex';
+        document.getElementById('fb-success-msg').style.display = 'none';
+    }
+
+    function closeFeedbackModal() {
+        document.getElementById('feedback-modal').style.display = 'none';
+    }
+
+    async function handleFeedbackSubmit(e) {
+        e.preventDefault();
+        const category = document.getElementById('fb-category').value;
+        const message = document.getElementById('fb-message').value;
+        const user = localStorage.getItem('apexCurrentUser') || 'Anonymous';
+        try {
+            if (typeof supabase !== 'undefined' && supabase) {
+                await supabase.from('feedback').insert([{ user_id: user, category: category, message: message }]);
+            } else {
+                const existingFb = JSON.parse(localStorage.getItem('apex_feedback') || '[]');
+                existingFb.push({ user, category, message, date: new Date().toISOString() });
+                localStorage.setItem('apex_feedback', JSON.stringify(existingFb));
+            }
+
+            document.getElementById('feedback-form').reset();
+            document.getElementById('fb-success-msg').style.display = 'block';
+            setTimeout(() => { closeFeedbackModal(); }, 2000);
+        } catch (err) {
+            console.error("Error saving feedback:", err);
+            showErrorToast("Failed to submit feedback. Please try again!");
+        }
+    }
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').then(reg => {
+                console.log('PWA ServiceWorker ready');
+            }).catch(err => {
+                console.log('ServiceWorker error: ', err);
+            });
+        });
+    }
+
+    window.onload = function() {
+        if (localStorage.getItem('apexCurrentUser')) {
+            updateNavState(true);
+            loadDashboard();
+        }
+        updateUserCount();
+    };
+</script>
+</body>
+</html>
