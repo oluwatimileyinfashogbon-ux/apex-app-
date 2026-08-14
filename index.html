@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ApexFlow - Premium Invoicing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body class="bg-black text-zinc-100 min-h-screen antialiased selection:bg-amber-500 selection:text-black">
+
+    <div id="authContainer" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-zinc-900/90 border border-amber-500/30 p-8 rounded-2xl w-full max-w-md shadow-2xl shadow-amber-500/5 backdrop-blur-md">
+            <h1 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-amber-400 to-yellow-500 mb-1 text-center tracking-tight">ApexFlow</h1>
+            <p class="text-xs text-amber-400/70 mb-6 text-center font-medium">Premium Invoicing & Revenue Suite</p>
+            
+            <form id="authForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-amber-400/90 mb-1">Email</label>
+                    <input type="email" id="authEmail" required placeholder="you@example.com" 
+                        class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-amber-400/90 mb-1">Password</label>
+                    <input type="password" id="authPassword" required placeholder="••••••••" 
+                        class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="submit" onclick="authAction='login'" class="w-1/2 bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-500 hover:from-amber-300 hover:to-yellow-400 text-zinc-950 font-bold text-sm py-2.5 rounded-xl shadow-lg shadow-amber-500/20 transition duration-200">Log In</button>
+                    <button type="submit" onclick="authAction='signup'" class="w-1/2 bg-zinc-800 hover:bg-zinc-700 text-amber-300 font-semibold text-sm py-2.5 rounded-xl border border-amber-500/20 transition">Sign Up</button>
+                </div>
+            </form>
+            <p id="authError" class="text-xs text-rose-400 mt-4 text-center hidden"></p>
+        </div>
+    </div>
+
+    <div id="dashboardContainer" class="hidden min-h-screen p-4 md:p-8 max-w-6xl mx-auto space-y-6">
+        
+        <header class="flex justify-between items-center bg-zinc-900/80 border border-amber-500/20 p-4 rounded-2xl backdrop-blur-md shadow-lg shadow-amber-500/5">
+            <div>
+                <h1 class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 via-amber-400 to-yellow-500">ApexFlow</h1>
+                <p id="userEmailDisplay" class="text-xs text-zinc-400"></p>
+            </div>
+            <button onclick="logout()" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-amber-400 border border-amber-500/30 px-3.5 py-2 rounded-xl transition font-medium">Log Out</button>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-zinc-900/80 border border-amber-500/20 p-5 rounded-2xl relative overflow-hidden">
+                <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-amber-500/10 rounded-full blur-xl"></div>
+                <span class="text-xs text-amber-400/80 uppercase tracking-wider font-bold">Total Revenue</span>
+                <p id="statTotalRevenue" class="text-2xl font-black text-white mt-1">₦0.00</p>
+            </div>
+            <div class="bg-zinc-900/80 border border-amber-500/20 p-5 rounded-2xl relative overflow-hidden">
+                <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-yellow-500/10 rounded-full blur-xl"></div>
+                <span class="text-xs text-amber-400/80 uppercase tracking-wider font-bold">Pending Amount</span>
+                <p id="statPendingRevenue" class="text-2xl font-black text-amber-400 mt-1">₦0.00</p>
+            </div>
+            <div class="bg-zinc-900/80 border border-amber-500/20 p-5 rounded-2xl relative overflow-hidden">
+                <span class="text-xs text-amber-400/80 uppercase tracking-wider font-bold">Total Invoices</span>
+                <p id="statTotalCount" class="text-2xl font-black text-yellow-500 mt-1">0</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <div class="bg-zinc-900/80 border border-amber-500/20 p-6 rounded-2xl space-y-4 shadow-xl">
+                <h2 class="text-base font-bold text-amber-400 border-b border-zinc-800 pb-3">Create Invoice</h2>
+                <form id="invoiceForm" class="space-y-3.5">
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-400 mb-1">Client Name</label>
+                        <input type="text" id="clientName" required placeholder="Acme Corp" 
+                            class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-400 mb-1">Client Email</label>
+                        <input type="email" id="clientEmail" required placeholder="client@acme.com" 
+                            class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-400 mb-1">Amount (₦ NGN)</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-amber-400 font-bold text-sm pointer-events-none">₦</span>
+                            <input type="number" step="0.01" id="amount" required placeholder="60000" 
+                                class="w-full bg-zinc-950 border border-zinc-800 rounded-xl pl-8 pr-3.5 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-400 mb-1">Due Date</label>
+                        <input type="date" id="dueDate" required 
+                            class="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-amber-500 transition">
+                    </div>
+                    <button type="submit" class="w-full bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-500 hover:from-amber-300 hover:to-yellow-400 text-black font-bold text-sm py-2.5 rounded-xl transition shadow-lg shadow-amber-500/20 mt-2">
+                        Generate Invoice
+                    </button>
+                </form>
+            </div>
+
+            <div class="lg:col-span-2 bg-zinc-900/80 border border-amber-500/20 rounded-2xl p-6 overflow-x-auto shadow-xl">
+                <h2 class="text-base font-bold text-amber-400 border-b border-zinc-800 pb-3 mb-4">Invoices Feed</h2>
+                <table class="w-full text-left border-collapse min-w-[500px]">
+                    <thead>
+                        <tr class="text-xs text-amber-400/70 border-b border-zinc-800">
+                            <th class="pb-3 px-4 font-semibold">Invoice ID</th>
+                            <th class="pb-3 px-4 font-semibold">Client</th>
+                            <th class="pb-3 px-4 font-semibold">Amount</th>
+                            <th class="pb-3 px-4 font-semibold">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="invoiceTableBody" class="divide-y divide-zinc-800 text-sm">
+                        <tr><td colspan="4" class="py-8 text-center text-zinc-500">Loading invoices...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // ----------------------------------------------------
+        // 1. SUPABASE CONFIGURATION
+        // ----------------------------------------------------
+        const SUPABASE_URL = 'https://neyoalmoarwvurlpajwr.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_wy-u-4gq2FDwAq6Ydg6Zag_Oku_5RKV';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentUser = null;
+        let storedInvoices = [];
+        let authAction = 'login';
+
+        // ----------------------------------------------------
+        // 2. AUTHENTICATION HANDLERS
+        // ----------------------------------------------------
+        const authForm = document.getElementById('authForm');
+        const authError = document.getElementById('authError');
+
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            authError.classList.add('hidden');
+            const email = document.getElementById('authEmail').value;
+            const password = document.getElementById('authPassword').value;
+
+            try {
+                let response;
+                if (authAction === 'signup') {
+                    response = await supabaseClient.auth.signUp({ email, password });
+                } else {
+                    response = await supabaseClient.auth.signInWithPassword({ email, password });
+                }
+
+                if (response.error) throw response.error;
+                
+                if (authAction === 'signup' && !response.data.session) {
+                    alert('Signup successful! Check your email inbox for the confirmation link.');
+                }
+            } catch (err) {
+                authError.textContent = err.message;
+                authError.classList.remove('hidden');
+            }
+        });
+
+        async function logout() {
+            await supabaseClient.auth.signOut();
+        }
+
+        // Listen for user login/logout states
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+            if (session) {
+                currentUser = session.user;
+                document.getElementById('authContainer').classList.add('hidden');
+                document.getElementById('dashboardContainer').classList.remove('hidden');
+                document.getElementById('userEmailDisplay').textContent = currentUser.email;
+                loadInvoices();
+            } else {
+                currentUser = null;
+                document.getElementById('authContainer').classList.remove('hidden');
+                document.getElementById('dashboardContainer').classList.add('hidden');
+            }
+        });
+
+        // ----------------------------------------------------
+        // 3. INVOICE CREATION HANDLER (STRICTLY NAIRA)
+        // ----------------------------------------------------
+        const invoiceForm = document.getElementById('invoiceForm');
+        invoiceForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser) return;
+
+            const name = document.getElementById('clientName').value;
+            const email = document.getElementById('clientEmail').value;
+            const amt = parseFloat(document.getElementById('amount').value);
+            const due = document.getElementById('dueDate').value;
+
+            try {
+                // 1. Insert client
+                let { data: client, error: clientErr } = await supabaseClient
+                    .from('clients')
+                    .insert([{ user_id: currentUser.id, client_name: name, client_email: email }])
+                    .select()
+                    .single();
+
+                if (clientErr) throw clientErr;
+
+                // 2. Insert invoice (currency strictly locked to Naira)
+                const invNum = 'INV-' + Math.floor(1000 + Math.random() * 9000);
+                const { error: invErr } = await supabaseClient
+                    .from('invoices')
+                    .insert([{
+                        user_id: currentUser.id,
+                        client_id: client.id,
+                        amount: amt,
+                        due_date: due,
+                        invoice_number: invNum,
+                        currency: '₦',
+                        status: 'sent'
+                    }]);
+
+                if (invErr) throw invErr;
+
+                invoiceForm.reset();
+                loadInvoices();
+            } catch (err) {
+                alert('Error creating invoice: ' + err.message);
+            }
+        });
+
+        // ----------------------------------------------------
+        // 4. LOAD & RENDER INVOICES
+        // ----------------------------------------------------
+        async function loadInvoices() {
+            const tableBody = document.getElementById('invoiceTableBody');
+            try {
+                const { data: invoices, error } = await supabaseClient
+                    .from('invoices')
+                    .select('*, clients(client_name, client_email)')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                storedInvoices = invoices || [];
+
+                if (storedInvoices.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-zinc-500">No invoices generated yet.</td></tr>`;
+                    updateStats(0, 0, 0);
+                    return;
+                }
+
+                let total = 0, pending = 0;
+                tableBody.innerHTML = storedInvoices.map((inv, idx) => {
+                    const amt = parseFloat(inv.amount) || 0;
+                    const isPaid = inv.status === 'paid';
+
+                    total += amt;
+                    if (!isPaid) pending += amt;
+
+                    const cName = inv.clients ? inv.clients.client_name : 'Client';
+                    const cEmail = inv.clients ? inv.clients.client_email : '';
+
+                    const statusBadge = isPaid 
+                        ? `<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full">PAID</span>`
+                        : `<span class="bg-amber-500/10 text-amber-400 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full">PENDING</span>`;
+
+                    return `
+                        <tr class="hover:bg-amber-500/5 transition">
+                            <td class="py-3.5 px-4">
+                                <div class="font-mono text-xs font-semibold text-amber-400">${inv.invoice_number}</div>
+                                <div class="mt-1">${statusBadge}</div>
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <div class="font-medium text-white">${cName}</div>
+                                <div class="text-xs text-zinc-500">${cEmail}</div>
+                            </td>
+                            <td class="py-3.5 px-4 font-semibold text-white">₦${amt.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                            <td class="py-3.5 px-4 flex items-center gap-1.5">
+                                ${!isPaid ? `
+                                    <button onclick="markAsPaid('${inv.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] px-2 py-1 rounded-md font-medium transition">
+                                        ✓ Paid
+                                    </button>
+                                ` : ''}
+                                <button onclick="triggerPayment(${amt})" class="bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-black text-[11px] px-2 py-1 rounded-md font-bold transition">Pay Link</button>
+                                <button onclick="downloadPDF(${idx})" class="bg-zinc-800 hover:bg-zinc-700 text-amber-300 border border-amber-500/20 text-[11px] px-2 py-1 rounded-md font-medium transition">PDF</button>
+                                <button onclick="deleteInvoice('${inv.id}')" class="text-rose-400 hover:text-rose-300 text-[11px] px-1.5 py-1 transition">✕</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                updateStats(total, pending, storedInvoices.length);
+            } catch (err) {
+                tableBody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-rose-500">Error: ${err.message}</td></tr>`;
+            }
+        }
+
+        function updateStats(total, pending, count) {
+            document.getElementById('statTotalRevenue').textContent = '₦' + total.toLocaleString('en-US', {minimumFractionDigits: 2});
+            document.getElementById('statPendingRevenue').textContent = '₦' + pending.toLocaleString('en-US', {minimumFractionDigits: 2});
+            document.getElementById('statTotalCount').textContent = count;
+        }
+
+        // ----------------------------------------------------
+        // 5. HELPER ACTIONS (MARK PAID, DELETE, PDF, PAY LINK)
+        // ----------------------------------------------------
+        async function markAsPaid(invoiceId) {
+            try {
+                const { error } = await supabaseClient
+                    .from('invoices')
+                    .update({ status: 'paid' })
+                    .eq('id', invoiceId);
+
+                if (error) throw error;
+                loadInvoices();
+            } catch (err) {
+                alert('Error updating status: ' + err.message);
+            }
+        }
+
+        async function deleteInvoice(invoiceId) {
+            if (!confirm("Are you sure you want to delete this invoice?")) return;
+            try {
+                const { error } = await supabaseClient
+                    .from('invoices')
+                    .delete()
+                    .eq('id', invoiceId);
+
+                if (error) throw error;
+                loadInvoices();
+            } catch (err) {
+                alert('Error deleting invoice: ' + err.message);
+            }
+        }
+
+        function triggerPayment(amount) {
+            if (amount && amount <= 10000) {
+                window.open('https://app.raenest.com/invoice/payment/RNMFMY3C3', '_blank');
+            } else {
+                window.open('https://app.raenest.com/invoice/payment/RNMPUP3M5', '_blank');
+            }
+        }
+
+        function downloadPDF(index) {
+            const inv = storedInvoices[index];
+            if (!inv) return;
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const cName = inv.clients ? inv.clients.client_name : 'Client';
+
+            doc.setFontSize(20);
+            doc.text("INVOICE", 20, 20);
+            doc.setFontSize(12);
+            doc.text(`Invoice Number: ${inv.invoice_number}`, 20, 35);
+            doc.text(`Client: ${cName}`, 20, 45);
+            doc.text(`Due Date: ${inv.due_date}`, 20, 55);
+            doc.text(`Amount: NGN ${parseFloat(inv.amount).toLocaleString('en-US', {minimumFractionDigits: 2})}`, 20, 65);
+            doc.text(`Status: ${(inv.status || 'sent').toUpperCase()}`, 20, 75);
+
+            doc.save(`${inv.invoice_number}.pdf`);
+        }
+    </script>
+</body>
+</html>
