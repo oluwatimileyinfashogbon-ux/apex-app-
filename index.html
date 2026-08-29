@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ApexFlow - Elite Global Invoicing & Revenue Suite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'float-delayed': 'float 6s ease-in-out 3s infinite',
+                        'glow': 'glow 4s ease-in-out infinite alternate',
+                        'logo-glow': 'logoGlow 3s ease-in-out infinite alternate',
+                        'logo-float': 'logoFloat 4s ease-in-out infinite',
+                        'slide-up': 'slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'slide-left': 'slideLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0) scale(1)' },
+                            '50%': { transform: 'translateY(-20px) scale(1.05)' },
+                        },
+                        logoFloat: {
+                            '0%, 100%': { transform: 'translateY(0) rotate(0deg) scale(1)' },
+                            '50%': { transform: 'translateY(-8px) rotate(-1deg) scale(1.05)' },
+                        },
+                        logoGlow: {
+                            '0%': { boxShadow: '0 0 25px rgba(212, 175, 55, 0.25), inset 0 0 12px rgba(255, 255, 255, 0.3)' },
+                            '100%': { boxShadow: '0 0 50px rgba(212, 175, 55, 0.6), inset 0 0 22px rgba(255, 255, 255, 0.6)' },
+                        },
+                        glow: {
+                            '0%': { opacity: '0.1', transform: 'scale(0.95)' },
+                            '100%': { opacity: '0.3', transform: 'scale(1.1)' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translate3d(0, 24px, 0)' },
+                            '100%': { opacity: '1', transform: 'translate3d(0, 0, 0)' },
+                        },
+                        slideLeft: {
+                            '0%': { opacity: '0', transform: 'translate3d(24px, 0, 0)' },
+                            '100%': { opacity: '1', transform: 'translate3d(0, 0, 0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://js.paystack.co/v1/inline.js"></script>
+
+    <style>
+        html.dark { background-color: #030304 !important; }
+        body {
+            background-color: #030304 !important;
+            color: #f4f4f5 !important;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-image:
+                radial-gradient(circle at 50% -20%, #1a170c 0%, transparent 60%),
+                radial-gradient(circle at 100% 100%, #0c0905 0%, transparent 50%);
+            -webkit-tap-highlight-color: transparent;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .glass-card {
+            background: linear-gradient(145deg, rgba(20, 20, 24, 0.85) 0%, rgba(8, 8, 10, 0.95) 100%);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            border-color: rgba(212, 175, 55, 0.4);
+            box-shadow: 0 20px 50px -10px rgba(212, 175, 55, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+        .input-glass {
+            background: rgba(0, 0, 0, 0.5);
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.8), 0 1px 0 rgba(255, 255, 255, 0.03);
+        }
+        .input-glass:focus {
+            border-color: #d4af37 !important;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.8), 0 0 15px rgba(212, 175, 55, 0.3) !important;
+            outline: none;
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #030304; }
+        ::-webkit-scrollbar-thumb {
+            background: #1c1c22;
+            border-radius: 9999px;
+            border: 1px solid #030304;
+        }
+        ::-webkit-scrollbar-thumb:hover { background: #d4af37; }
+        ::-webkit-calendar-picker-indicator {
+            filter: invert(0.8) sepia(1) saturate(3) hue-rotate(5deg);
+            cursor: pointer;
+            opacity: 0.6;
+            transition: 0.2s;
+        }
+        ::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+
+        .tab-active {
+            background-image: linear-gradient(to right, #fde047, #f59e0b);
+            color: #000 !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            font-weight: 700;
+        }
+        .tab-inactive { color: #a1a1aa !important; background-color: transparent; box-shadow: none; font-weight: 600; }
+        .tab-inactive:hover { color: #fff !important; }
+        .tab-active-expenses {
+            background-image: linear-gradient(to right, #fb7185, #ef4444);
+            color: #fff !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            font-weight: 700;
+        }
+
+        @media (max-width: 768px) {
+            .glass-card { padding: 1.25rem !important; border-radius: 1.5rem !important; }
+            .overflow-x-auto { -webkit-overflow-scrolling: touch; }
+            .tab-active, .tab-inactive, .tab-active-expenses { font-size: 0.65rem !important; padding: 0.5rem !important; }
+        }
+
+        .spinner {
+            border: 3px solid rgba(212, 175, 55, 0.1);
+            border-top-color: #d4af37;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .animate-fade-in { animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .btn-gold {
+            background: linear-gradient(135deg, #fcd34d, #f59e0b);
+            color: #000;
+            font-weight: 700;
+            padding: 0.75rem 1.5rem;
+            border-radius: 1rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-gold:hover { transform: scale(1.02); box-shadow: 0 0 30px rgba(212, 175, 55, 0.3); }
+        .btn-gold:active { transform: scale(0.97); }
+        .line-item-row { display: flex; gap: 0.5rem; align-items: center; }
+        .line-item-row input { flex: 1; }
+        .line-item-row .qty-input { width: 4rem; }
+        .line-item-row .price-input { width: 6rem; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+    </style>
+</head>
+<body class="text-zinc-100 min-h-screen antialiased selection:bg-amber-500 selection:text-black relative overflow-x-hidden font-sans">
+
+    <!-- Ambient Glow Effects -->
+    <div class="fixed top-[-10%] left-[20%] w-[500px] md:w-[750px] h-[500px] bg-amber-500/10 blur-[150px] rounded-full pointer-events-none animate-glow"></div>
+    <div class="fixed bottom-[-10%] right-[-5%] w-[400px] md:w-[600px] h-[400px] bg-yellow-600/10 blur-[160px] rounded-full pointer-events-none animate-float-delayed"></div>
+    <div class="fixed top-[45%] left-[-10%] w-[350px] h-[350px] bg-amber-700/8 blur-[140px] rounded-full pointer-events-none animate-float"></div>
+
+    <div id="qrcode-hidden" class="fixed opacity-0 pointer-events-none" style="top:-9999px;left:-9999px"></div>
+    <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"></div>
+
+    <!-- AUTHENTICATION VIEW -->
+    <div id="authContainer" class="min-h-screen flex items-center justify-center p-4 relative z-10">
+        <div class="glass-card p-8 md:p-12 rounded-[2.5rem] w-full max-w-md animate-slide-up relative overflow-hidden group">
+            <div class="absolute -top-20 -right-20 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl group-hover:bg-amber-500/20 transition-all duration-700 pointer-events-none"></div>
+
+            <div class="text-center mb-10 relative">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-gradient-to-br from-amber-200 via-yellow-500 to-amber-700 text-black font-black mb-5 animate-logo-float animate-logo-glow cursor-pointer transition-transform hover:scale-110 shadow-2xl border border-amber-200/40 p-3">
+                    <svg class="w-8 h-8 drop-shadow-md" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                </div>
+                <h1 class="text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-100 via-amber-300 to-amber-600 drop-shadow-sm">ApexFlow</h1>
+                <p class="text-xs text-amber-400/80 mt-2 font-bold tracking-[0.25em] uppercase">Elite Revenue Suite</p>
+            </div>
+
+            <div id="spotCounter" class="text-center mb-6 text-sm text-amber-400/90 font-medium">🔥 Loading spots...</div>
+
+            <p class="text-center text-sm text-zinc-400 mb-6">Sign in to access your elite invoicing dashboard</p>
+
+            <button type="button" onclick="signInWithGoogle()" class="w-full bg-white/5 hover:bg-white/10 active:scale-[0.98] text-white border border-zinc-700/50 hover:border-amber-500/40 font-bold text-sm py-4 rounded-2xl transition-all duration-300 flex items-center justify-center gap-3">
+                <svg class="w-5 h-5" viewBox="0 0 48 48">
+                    <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" />
+                    <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z" />
+                    <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" />
+                    <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z" />
+                </svg>
+                Continue with Google
+            </button>
+
+            <div id="authLoading" class="hidden mt-4 text-center">
+                <div class="spinner mx-auto"></div>
+                <p class="text-xs text-zinc-400 mt-2">Authenticating workspace...</p>
+            </div>
+
+            <div class="mt-6 text-center flex justify-between items-center px-2">
+                <button type="button" onclick="openTerms()" class="text-[11px] text-zinc-500 hover:text-amber-400 underline transition-colors">Terms & Conditions</button>
+                <span class="text-[10px] text-zinc-600 font-mono">v4.2</span>
+            </div>
+            <p id="authError" class="text-xs text-rose-400 mt-5 text-center hidden bg-rose-500/10 border border-rose-500/20 p-3.5 rounded-2xl font-medium backdrop-blur-md"></p>
+        </div>
+    </div>
+
+    <!-- WAITLIST MODAL -->
+    <div id="waitlistModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+        <div class="glass-card p-6 md:p-9 rounded-[1.5rem] md:rounded-[2.5rem] w-full max-w-md relative border border-amber-500/40 shadow-[0_0_60px_rgba(212,175,55,0.2)] mx-4 animate-fade-in text-center">
+            <div class="mb-4">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-amber-500/10 text-amber-400 mb-3 border border-amber-500/30 shadow-inner">
+                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-black text-white">🚀 You're on the <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-amber-500">VIP Waitlist</span></h3>
+                <p class="text-sm text-zinc-400 mt-2">ApexFlow has reached maximum capacity (2,000 slots). <br>We'll notify you the moment a spot opens up.</p>
+                <div class="mt-6 p-4 bg-zinc-900/50 rounded-xl border border-zinc-800/60">
+                    <p class="text-xs text-zinc-500">📧 Registered Account</p>
+                    <p class="text-sm text-amber-300 font-mono font-bold" id="waitlistEmailDisplay">loading...</p>
+                </div>
+                <button type="button" onclick="logout()" class="mt-6 w-full btn-gold">Sign Out</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD -->
+    <div id="dashScreen" class="hidden min-h-screen p-4 md:p-8 max-w-7xl mx-auto space-y-6 relative z-10 animate-slide-up">
+        <header class="flex flex-col md:flex-row gap-4 justify-between items-center glass-card p-5 md:px-8 rounded-3xl">
+            <div class="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-200 via-yellow-500 to-amber-700 flex items-center justify-center text-black font-black animate-logo-float animate-logo-glow cursor-pointer transition-transform hover:scale-110 shadow-lg border border-amber-200/40 p-2.5">
+                        <svg class="w-6 h-6 drop-shadow" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-100 via-amber-300 to-amber-500 tracking-wide">ApexFlow</h1>
+                        <p id="userEmail" class="text-xs text-zinc-400 font-mono mt-0.5 font-medium"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 w-full md:w-auto justify-end flex-wrap">
+                <button type="button" onclick="logout()" class="text-xs bg-black/40 hover:bg-zinc-800 text-amber-300 border border-amber-500/25 px-5 py-3 rounded-2xl transition-all duration-300 font-bold hover:border-amber-500/60 active:scale-95">
+                    Exit
+                </button>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="flex flex-wrap gap-2 bg-black/40 p-1.5 rounded-2xl border border-amber-500/15 backdrop-blur-md">
+            <button type="button" class="tab-btn px-4 py-2 rounded-xl text-xs tab-active transition-all duration-300" data-tab="dashboard">📊 Dashboard</button>
+            <button type="button" class="tab-btn px-4 py-2 rounded-xl text-xs tab-inactive transition-all duration-300" data-tab="invoices">📄 Invoices</button>
+            <button type="button" class="tab-btn px-4 py-2 rounded-xl text-xs tab-inactive transition-all duration-300" data-tab="expenses">💸 Expenses</button>
+            <button type="button" class="tab-btn px-4 py-2 rounded-xl text-xs tab-inactive transition-all duration-300" data-tab="settings">⚙️ Settings</button>
+        </div>
+
+        <!-- TAB: Dashboard Overview -->
+        <div id="tab-dashboard" class="tab-content active space-y-6">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="glass-card p-6 text-center">
+                    <p class="text-[10px] text-amber-400/90 uppercase tracking-[0.2em]">Settled Revenue</p>
+                    <p id="statRevenue" class="text-2xl font-black text-white mt-2">₦0.00</p>
+                </div>
+                <div class="glass-card p-6 text-center">
+                    <p class="text-[10px] text-amber-400/90 uppercase tracking-[0.2em]">Pending Invoices</p>
+                    <p id="statPending" class="text-2xl font-black text-amber-300 mt-2">₦0.00</p>
+                </div>
+                <div class="glass-card p-6 text-center">
+                    <p class="text-[10px] text-rose-400/90 uppercase tracking-[0.2em]">Capital Expenses</p>
+                    <p id="statExpenses" class="text-2xl font-black text-rose-400 mt-2">₦0.00</p>
+                </div>
+                <div class="glass-card p-6 text-center">
+                    <p class="text-[10px] text-emerald-400/90 uppercase tracking-[0.2em]">Net Profit</p>
+                    <p id="statProfit" class="text-2xl font-black text-emerald-400 mt-2">₦0.00</p>
+                </div>
+            </div>
+            <div class="glass-card p-6">
+                <p class="text-sm text-zinc-400">👋 Active portfolio has <span id="invoiceCount" class="text-amber-300 font-bold">0</span> invoices and <span id="expenseCount" class="text-rose-400 font-bold">0</span> expense logs.</p>
+                <p class="text-xs text-zinc-500 mt-1">🔥 <span id="dashSpots">Loading spots...</span> remaining globally.</p>
+            </div>
+        </div>
+
+        <!-- TAB: Invoices -->
+        <div id="tab-invoices" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="glass-card p-6 space-y-4">
+                    <h2 class="text-xs font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-600 tracking-[0.2em] uppercase">➕ New Invoice</h2>
+                    <form id="invoiceForm" class="space-y-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">Company Logo <span class="text-amber-400 font-normal">Optional</span></label>
+                            <input type="file" id="companyLogo" accept="image/*" onchange="handleLogoUpload(event)" class="input-glass w-full border border-zinc-800/90 rounded-2xl px-3 py-2 text-xs text-zinc-400 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-gradient-to-r file:from-amber-300 file:to-amber-500 file:text-black cursor-pointer">
+                            <img id="logoPreview" class="mt-2 h-10 hidden rounded-lg border border-amber-500/30 object-contain p-1 bg-black/60" alt="Logo Preview">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">Client Name</label>
+                            <input type="text" id="invClient" list="clientRolodexList" oninput="onClientInput()" placeholder="Acme Global Inc" class="input-glass w-full border border-zinc-800/90 rounded-2xl px-4 py-2.5 text-sm text-white focus:outline-none" required>
+                            <datalist id="clientRolodexList"></datalist>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">Client Email</label>
+                            <input type="email" id="invEmail" placeholder="billing@acme.com" class="input-glass w-full border border-zinc-800/90 rounded-2xl px-4 py-2.5 text-sm text-white focus:outline-none" required>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">Currency</label>
+                            <select id="invCurrency" onchange="updateLiveCalc()" class="input-glass w-full border border-zinc-800/90 rounded-2xl px-4 py-2.5 text-sm text-amber-300 font-bold focus:outline-none cursor-pointer">
+                                <option value="₦">NGN (₦)</option>
+                                <option value="$">USD ($)</option>
+                                <option value="€">EUR (€)</option>
+                                <option value="£">GBP (£)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Line Items</label>
+                                <button type="button" onclick="addLineItem()" class="text-xs bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 px-3 py-1 rounded-xl font-bold transition-all">+ Add Line Item</button>
+                            </div>
+                            <div id="lineItemsContainer" class="mt-2 space-y-2"></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">Tax / VAT (%)</label>
+                                <input type="number" step="0.1" id="taxPercent" oninput="updateLiveCalc()" placeholder="0" class="input-glass w-full border border-zinc-800/90 rounded-2xl px-4 py-2.5 text-sm text-white focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">Discount (%)</label>
+                                <input type="number" step="0.1" id="discountPercent" oninput="updateLiveCalc()" placeholder="0" class="input-glass w-full border border-zinc-800/90 rounded-2xl px-4 py-2.5 text-sm text-white focus:outline-none">
+                            </div>
+                        </div>
+                        <div class="bg-black/50 border border-amber-500/20 p-3 rounded-2xl space-y-1 text-xs">
+                            <div class="flex justify-between text-zinc-400"><span>Subtotal:</span><span id="liveSubtotal" class="font-mono text-white">₦0.00</span></div>
+                            <div class="flex justify-between text-zinc-400"><span>Tax:</span><span id="liveTax" class="font-mono text-emerald-400">+₦0.00</span></div>
+                            <div class="flex justify-between text-zinc-400"><span>Discount:</span><span id="liveDiscount" class="font-mono text-rose-400">-₦0.00</span></div>
+                            <div class="flex justify-between text-sm font-bold text-amber-300 pt-1 border-t border-zinc-800/80"><span>Total Payable:</span><span id="liveGrandTotal" class="font-mono">₦0.00</span></div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">Due Date</label>
+                            <input type="date" id="invDue" class="input-glass w-full border border-zinc-800/90 rounded-2xl px-4 py-2.5 text-sm text-white focus:outline-none" required>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">Payment Link <span class="text-amber-400 font-normal">Optional</span></label>
+                            <input type="url" id="payLink" placeholder="https://pay.company.com/inv-123" class="input-glass w-full border border-zinc-800/90 rounded-2xl px-4 py-2.5 text-sm text-white focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">Bank Details <span class="text-amber-400 font-normal">Optional</span></label>
+                            <textarea id="bankDetails" rows="2" placeholder="Bank: GTBank&#10;Acct No: 0123456789" class="input-glass w-full border border-zinc-800/90 rounded-2xl px-4 py-2.5 text-sm text-white focus:outline-none resize-none"></textarea>
+                        </div>
+                        <button type="submit" class="btn-gold w-full" id="invoiceSubmitBtn">Issue Elite Invoice</button>
+                    </form>
+                </div>
+                <div class="glass-card p-6">
+                    <h2 class="text-xs font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-600 tracking-[0.2em] uppercase mb-4">📋 Invoice Registry</h2>
+                    <div class="flex gap-2 mb-3 flex-wrap">
+                        <input type="text" id="invoiceSearch" oninput="filterInvoices()" placeholder="Search..." class="input-glass flex-1 border border-zinc-800/90 rounded-2xl px-3 py-1.5 text-xs text-white focus:outline-none">
+                        <select id="invoiceFilter" onchange="filterInvoices()" class="input-glass border border-zinc-800/90 rounded-2xl px-3 py-1.5 text-xs text-amber-300 font-bold focus:outline-none cursor-pointer">
+                            <option value="all">All</option>
+                            <option value="pending">Pending</option>
+                            <option value="paid">Paid</option>
+                            <option value="overdue">Overdue</option>
+                        </select>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead>
+                                <tr class="text-zinc-400 border-b border-zinc-800/60">
+                                    <th class="py-2">#</th>
+                                    <th>Client</th>
+                                    <th>Amount</th>
+                                    <th class="text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="invoiceList">
+                                <tr>
+                                    <td colspan="4" class="py-6 text-center text-zinc-500">No invoices generated</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Expenses -->
+        <div id="tab-expenses" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="glass-card p-6 space-y-4">
+                    <h2 class="text-xs font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-300 via-rose-400 to-red-600 tracking-[0.2em] uppercase">➕ New Expense Log</h2>
+                    <form id="expenseForm" class="space-y-3">
+                        <div>
+                            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">Vendor / Title</label>
+                            <input type="text" id="expTitle" placeholder="AWS Infrastructure / Server Hub" class="input-glass w-full border border-zinc-800/90 rounded-2xl px-4 py-2.5 text-sm text-white focus:outline-none" required>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">Category</label>
+                            <select id="expCategory" class="input-glass w-full border border-zinc-800/90 rounded-2xl px-4 py-2.5 text-sm text-rose-300 font-bold focus:outline-none cursor-pointer">
+                                <option value="Software">Software & Architecture</option>
+                                <option value="Hardware">Hardware & Infrastructure</option>
+                                <option value="Travel">Travel & Logistics</option>
+                                <option value="Marketing">Marketing</option>
+                                <option value="Other">Miscellaneous Asset</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">Amount</label>
+                            <input type="text" inputmode="decimal" id="expAmount" oninput="formatNumberInput(this)" placeholder="15,000.00" class="input-glass w-full border border-zinc-800/90 rounded-2xl px-4 py-2.5 text-sm text-white font-mono focus:outline-none" required>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider mb-1">Date</label>
+                            <input type="date" id="expDate" class="input-glass w-full border border-zinc-800/90 rounded-2xl px-4 py-2.5 text-sm text-white focus:outline-none" required>
+                        </div>
+                        <button type="submit" class="w-full bg-gradient-to-r from-rose-500 to-red-600 hover:scale-[1.02] active:scale-95 text-white font-black text-sm py-3 rounded-2xl transition-all duration-300 shadow-[0_0_25px_rgba(244,63,94,0.3)]" id="expenseSubmitBtn">Log Capital Outflow</button>
+                    </form>
+                </div>
+                <div class="glass-card p-6">
+                    <h2 class="text-xs font-black text-transparent bg-clip-text bg-gradient-to-r from-rose-300 via-rose-400 to-red-600 tracking-[0.2em] uppercase mb-4">📋 Capital Outflows</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead>
+                                <tr class="text-zinc-400 border-b border-zinc-800/60">
+                                    <th class="py-2">Title</th>
+                                    <th>Amount</th>
+                                    <th class="text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="expenseList">
+                                <tr><td colspan="3" class="py-6 text-center text-zinc-500">No expenses recorded</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Settings -->
+        <div id="tab-settings" class="tab-content">
+            <div class="glass-card p-6 space-y-4">
+                <h2 class="text-xs font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-600 tracking-[0.2em] uppercase">⚙️ Suite Configuration</h2>
+                <div class="flex flex-col gap-3">
+                    <button type="button" onclick="openTerms()" class="text-left text-sm text-amber-400 hover:underline">📜 Platform Terms & Conditions</button>
+                    <button type="button" onclick="openUpgradeModal()" class="text-left text-sm text-amber-400 hover:underline">⭐ Upgrade Account / Pro Subscription</button>
+                    <button type="button" onclick="openTutorial()" class="text-left text-sm text-zinc-400 hover:text-amber-400 transition-colors">📖 Interactive Platform Tutorial</button>
+                    <button type="button" onclick="logout()" class="text-left text-sm text-rose-400 hover:underline">🚪 Terminate Workspace Session</button>
+                </div>
+                <div id="adminPanel" class="hidden mt-6 border-t border-zinc-800/60 pt-4">
+                    <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider">🔐 Admin Organization Monitor</h3>
+                    <div id="adminUsers" class="mt-3 text-sm text-zinc-400">Loading platform profiles...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRO UPGRADE MODAL -->
+    <div id="upgradeModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+        <div class="glass-card p-6 md:p-9 rounded-[1.5rem] md:rounded-[2.5rem] w-full max-w-md relative border border-amber-500/40 shadow-[0_0_60px_rgba(212,175,55,0.2)] mx-4">
+            <button type="button" onclick="closeUpgradeModal()" class="absolute top-4 md:top-6 right-4 md:right-6 text-zinc-400 hover:text-white transition-all">✕</button>
+            <div class="text-center mb-6">
+                <h3 class="text-xl md:text-2xl font-black text-white">Upgrade to <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-amber-500">ApexFlow Pro</span></h3>
+                <p class="text-xs text-zinc-400 mt-1">Unlock full revenue scaling and bypass trial quotas.</p>
+            </div>
+            <div class="space-y-3">
+                <button type="button" onclick="handlePayment('monthly')" class="w-full flex items-center justify-between input-glass border border-zinc-800 hover:border-amber-500/50 p-4 rounded-2xl transition-all group hover:-translate-y-0.5">
+                    <div>
+                        <p class="text-sm font-bold text-white group-hover:text-amber-300">Monthly Pass</p>
+                        <p class="text-[10px] text-zinc-500">Billed monthly via Paystack</p>
+                    </div>
+                    <span class="text-sm font-black text-amber-300 font-mono">₦10,000<span class="text-xs text-zinc-500 font-sans font-normal">/mo</span></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- INTERACTIVE TUTORIAL MODAL -->
+    <div id="tutorialModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+        <div class="glass-card p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] w-full max-w-xl relative border border-amber-500/40 mx-4 animate-fade-in text-left">
+            <button type="button" onclick="closeTutorial()" class="absolute top-4 right-4 text-zinc-400 hover:text-white">✕</button>
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 mb-2 border border-amber-500/30">
+                    🚀
+                </div>
+                <h3 class="text-2xl font-black text-white">Welcome to <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-amber-500">ApexFlow</span></h3>
+                <p class="text-xs text-zinc-400 mt-1">Master your revenue suite in 4 simple steps.</p>
+            </div>
+
+            <div class="space-y-4 text-xs">
+                <div class="p-3 bg-zinc-900/60 rounded-xl border border-zinc-800 flex gap-3 items-start">
+                    <span class="bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded-md text-[10px]">1</span>
+                    <div>
+                        <p class="font-bold text-white">Dashboard Telemetry</p>
+                        <p class="text-zinc-400 mt-0.5">Monitor real-time revenue, pending invoices, capital expenses, and net profit metrics calculated automatically.</p>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-zinc-900/60 rounded-xl border border-zinc-800 flex gap-3 items-start">
+                    <span class="bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded-md text-[10px]">2</span>
+                    <div>
+                        <p class="font-bold text-white">Generate Elite Invoices</p>
+                        <p class="text-zinc-400 mt-0.5">Add line items, custom VAT/tax rates, discounts, payment links, and your company logo with instant total calculations.</p>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-zinc-900/60 rounded-xl border border-zinc-800 flex gap-3 items-start">
+                    <span class="bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded-md text-[10px]">3</span>
+                    <div>
+                        <p class="font-bold text-white">Multi-Currency & PDF Generation</p>
+                        <p class="text-zinc-400 mt-0.5">Switch between NGN, USD, EUR, and GBP dynamically. Click 'PDF' on any issued invoice to download formatted receipts.</p>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-zinc-900/60 rounded-xl border border-zinc-800 flex gap-3 items-start">
+                    <span class="bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded-md text-[10px]">4</span>
+                    <div>
+                        <p class="font-bold text-white">Capital Outflows & Pro Scaling</p>
+                        <p class="text-zinc-400 mt-0.5">Log expenses under Software, Hardware, and Marketing to compute net profit accurately. Upgrade to Pro anytime in Settings.</p>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" onclick="closeTutorial()" class="mt-6 w-full btn-gold">Launch Dashboard 🚀</button>
+        </div>
+    </div>
+
+    <!-- TERMS & CONDITIONS MODAL (DATABASE ALIGNED) -->
+    <div id="termsModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+        <div class="glass-card p-6 md:p-9 rounded-[1.5rem] md:rounded-[2.5rem] w-full max-w-2xl relative border border-amber-500/40 flex flex-col mx-4 max-h-[85vh]">
+            <button type="button" onclick="closeTerms()" class="absolute top-4 right-4 text-zinc-400 hover:text-white">✕</button>
+            <h3 class="text-xl font-black text-white border-b border-zinc-800/80 pb-3 mb-4">Terms & Conditions of Service</h3>
+            
+            <div class="overflow-y-auto pr-2 text-xs text-zinc-300 space-y-4 font-sans leading-relaxed">
+                <div>
+                    <h4 class="font-bold text-amber-400 uppercase tracking-wider text-[11px]">1. Platform Capacity & Global Quotas</h4>
+                    <p class="mt-1">ApexFlow operates with a maximum platform capacity of 2,000 active global workspaces. When total accounts equal or exceed this threshold, new signups are automatically placed on the VIP Waitlist until an active slot becomes available.</p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-amber-400 uppercase tracking-wider text-[11px]">2. Trial Period & Pro Subscriptions</h4>
+                    <p class="mt-1">New accounts are granted an 8-day trial period upon registration. To maintain uninterrupted access to invoicing, multi-currency processing, and capital expense tools after trial expiration, accounts must maintain an active Pro subscription.</p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-amber-400 uppercase tracking-wider text-[11px]">3. Data Maintenance & Automated Cleanup</h4>
+                    <p class="mt-1">To ensure optimal system performance, inactive trial accounts that remain unaccessed for more than 90 days following trial expiration are automatically removed by scheduled database system processes.</p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-amber-400 uppercase tracking-wider text-[11px]">4. Payment Processing & Currency Handling</h4>
+                    <p class="mt-1">All subscription fees and invoice transactions are processed securely via Paystack. Users are responsible for verifying transaction amounts and currency settings (NGN, USD, EUR, GBP) prior to issuing invoices.</p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-amber-400 uppercase tracking-wider text-[11px]">5. Acceptable Use & Account Security</h4>
+                    <p class="mt-1">ApexFlow may not be used for fraudulent activities, unauthorized payment solicitation, or illegal monetary transfers. Accounts violating usage policies are subject to immediate suspension.</p>
+                </div>
+            </div>
+
+            <button type="button" onclick="closeTerms()" class="w-full btn-gold mt-6">I Agree to Platform Terms</button>
+        </div>
+    </div>
+
+    <!-- APPLICATION SCRIPT -->
+    <script>
+        // ==========================================
+        // CONFIGURATION
+        // ==========================================
+        const SUPABASE_URL = 'https://neyoalmoarwvurlpajwr.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_wy-u-4gq2FDwAq6Ydg6Zag_Oku_5RKV';
+        const PAYSTACK_PUBLIC_KEY = 'pk_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
+
+        let supabaseClient = null;
+        let currentUser = null;
+        let currentUserProfile = null;
+        let invoices = [];
+        let expenses = [];
+        let clientRolodex = [];
+        let currentLogoBase64 = null;
+        let isAdmin = false;
+
+        try {
+            const sb = window.supabase;
+            if (sb && SUPABASE_URL) {
+                supabaseClient = sb.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('✅ Supabase initialized');
+            }
+        } catch (e) {
+            console.error('❌ Supabase init error:', e);
+        }
+
+        // ==========================================
+        // HELPERS
+        // ==========================================
+        function showToast(msg, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            const isSuccess = type === 'success';
+            toast.className = `pointer-events-auto flex items-center gap-3 px-5 py-3.5 rounded-2xl border ${isSuccess ? 'bg-amber-500/10 border-amber-500/40 text-amber-200' : 'bg-rose-500/10 border-rose-500/40 text-rose-200'} backdrop-blur-xl shadow-2xl animate-slide-left text-xs font-semibold`;
+            toast.innerHTML = `<div class="w-2 h-2 rounded-full ${isSuccess ? 'bg-amber-400' : 'bg-rose-400'} animate-pulse"></div><span>${msg}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
+        }
+
+        function formatNumberInput(el) {
+            let value = el.value.replace(/,/g, '');
+            if (!isNaN(value) && value.length > 0) {
+                let parts = value.split('.');
+                parts[0] = parseInt(parts[0], 10).toLocaleString('en-US');
+                el.value = parts.join('.');
+            }
+        }
+
+        function formatCurrency(amount, currency = '₦') {
+            return currency + Number(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function generateId() {
+            return typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'id_' + Math.random().toString(36).substring(2, 11);
+        }
+
+        // ==========================================
+        // AUTHENTICATION & RETRY LOGIC
+        // ==========================================
+        async function signInWithGoogle() {
+            if (!supabaseClient) {
+                const errEl = document.getElementById('authError');
+                errEl.innerText = '⚠️ Database connection offline. Please refresh.';
+                errEl.classList.remove('hidden');
+                return;
+            }
+            try {
+                document.getElementById('authError').classList.add('hidden');
+                document.getElementById('authLoading').classList.remove('hidden');
+                
+                const { error } = await supabaseClient.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: { redirectTo: window.location.origin + window.location.pathname }
+                });
+                if (error) throw error;
+            } catch (e) {
+                document.getElementById('authLoading').classList.add('hidden');
+                const errEl = document.getElementById('authError');
+                errEl.innerText = e.message || 'Sign-in failed';
+                errEl.classList.remove('hidden');
+            }
+        }
+
+        async function handleRedirect() {
+            if (!supabaseClient) return false;
+            try {
+                const { data, error } = await supabaseClient.auth.getSession();
+                if (error) throw error;
+                if (data?.session) {
+                    currentUser = data.session.user;
+                    await loadDashboard();
+                    return true;
+                }
+                return false;
+            } catch (e) {
+                console.warn('Redirect check:', e);
+                return false;
+            }
+        }
+
+        async function fetchUserProfile(retries = 3, delay = 800) {
+            if (!supabaseClient || !currentUser) return false;
+
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const { data } = await supabaseClient
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', currentUser.id)
+                        .maybeSingle();
+
+                    if (data) {
+                        currentUserProfile = data;
+                        if (data.role === 'owner' || data.role === 'admin') {
+                            isAdmin = true;
+                            document.getElementById('adminPanel').classList.remove('hidden');
+                            loadAdminUsers();
+                        }
+                        return true;
+                    }
+
+                    const { data: waitlistData } = await supabaseClient
+                        .from('waitlist')
+                        .select('*')
+                        .eq('user_id', currentUser.id)
+                        .maybeSingle();
+
+                    if (waitlistData) return false;
+
+                    if (i < retries - 1) {
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+                } catch (e) {
+                    console.warn('Profile fetch attempt error:', e);
+                }
+            }
+
+            showToast('Account sync pending. Please refresh.', 'error');
+            await logout();
+            return false;
+        }
+
+        async function logout() {
+            if (supabaseClient) await supabaseClient.auth.signOut();
+            currentUser = null;
+            currentUserProfile = null;
+            document.getElementById('authContainer').classList.remove('hidden');
+            document.getElementById('dashScreen').classList.add('hidden');
+            document.getElementById('waitlistModal').classList.add('hidden');
+            showToast('Signed out');
+        }
+
+        // ==========================================
+        // DASHBOARD & TELEMETRY
+        // ==========================================
+        async function loadDashboard() {
+            if (!currentUser) return;
+
+            document.getElementById('authContainer').classList.add('hidden');
+            const hasProfile = await fetchUserProfile();
+
+            if (hasProfile) {
+                document.getElementById('dashScreen').classList.remove('hidden');
+                document.getElementById('waitlistModal').classList.add('hidden');
+                document.getElementById('userEmail').innerText = currentUser.email;
+
+                await Promise.all([
+                    fetchOrganizationUsage(),
+                    fetchInvoices(),
+                    fetchExpenses(),
+                    fetchClients()
+                ]);
+                updateStats();
+
+                if (!localStorage.getItem('apexflow_tutorial_seen')) {
+                    setTimeout(() => openTutorial(), 500);
+                }
+            } else {
+                document.getElementById('dashScreen').classList.add('hidden');
+                document.getElementById('waitlistModal').classList.remove('hidden');
+                document.getElementById('waitlistEmailDisplay').innerText = currentUser.email;
+            }
+        }
+
+        async function fetchOrganizationUsage() {
+            if (!supabaseClient) return;
+            try {
+                const { data } = await supabaseClient.rpc('get_organization_usage', { p_user_id: currentUser ? currentUser.id : null });
+                if (data && data.length > 0) {
+                    const spotsText = data[0].spots_left + ' spots left';
+                    document.getElementById('spotCounter').innerText = '🔥 ' + spotsText;
+                    document.getElementById('dashSpots').innerText = spotsText;
+                }
+            } catch (e) {
+                document.getElementById('spotCounter').innerText = '🔥 Platform Ready';
+            }
+        }
+
+        function updateStats() {
+            let revenue = 0;
+            let pending = 0;
+            let expenseTotal = 0;
+
+            invoices.forEach(inv => {
+                const amt = parseFloat(inv.amount) || 0;
+                if (inv.status === 'paid') revenue += amt;
+                else pending += amt;
+            });
+
+            expenses.forEach(exp => {
+                expenseTotal += (parseFloat(exp.amount) || 0);
+            });
+
+            const profit = revenue - expenseTotal;
+
+            document.getElementById('statRevenue').innerText = formatCurrency(revenue);
+            document.getElementById('statPending').innerText = formatCurrency(pending);
+            document.getElementById('statExpenses').innerText = formatCurrency(expenseTotal);
+            document.getElementById('statProfit').innerText = formatCurrency(profit);
+
+            document.getElementById('invoiceCount').innerText = invoices.length;
+            document.getElementById('expenseCount').innerText = expenses.length;
+        }
+
+        // ==========================================
+        // CLIENT ROLODEX & LOGO
+        // ==========================================
+        async function fetchClients() {
+            if (!supabaseClient || !currentUser) return;
+            try {
+                const { data } = await supabaseClient.from('clients').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+                clientRolodex = data || [];
+                updateClientRolodex();
+            } catch (e) { console.warn('Clients error:', e); }
+        }
+
+        function updateClientRolodex() {
+            const dl = document.getElementById('clientRolodexList');
+            dl.innerHTML = '';
+            clientRolodex.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.client_name;
+                dl.appendChild(opt);
+            });
+        }
+
+        function onClientInput() {
+            const val = document.getElementById('invClient').value.toLowerCase();
+            const match = clientRolodex.find(c => c.client_name.toLowerCase() === val);
+            if (match) document.getElementById('invEmail').value = match.client_email;
+        }
+
+        function handleLogoUpload(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > 2 * 1024 * 1024) {
+                    showToast('Logo file size must be under 2MB', 'error');
+                    e.target.value = '';
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = evt => {
+                    currentLogoBase64 = evt.target.result;
+                    const preview = document.getElementById('logoPreview');
+                    preview.src = currentLogoBase64;
+                    preview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // ==========================================
+        // LINE ITEM MANAGERS
+        // ==========================================
+        function addLineItem(desc = '', qty = 1, price = 0) {
+            const container = document.getElementById('lineItemsContainer');
+            const rowId = generateId();
+            const div = document.createElement('div');
+            div.className = 'line-item-row bg-black/40 p-2 rounded-xl border border-zinc-800/80';
+            div.id = rowId;
+            
+            div.innerHTML = `
+                <input type="text" placeholder="Service item description" oninput="updateLiveCalc()" class="item-desc input-glass flex-1 border border-zinc-800 rounded-xl px-2 py-1.5 text-xs text-white focus:outline-none">
+                <input type="number" placeholder="Qty" min="1" oninput="updateLiveCalc()" class="item-qty qty-input input-glass border border-zinc-800 rounded-xl px-1 py-1.5 text-xs text-white text-center focus:outline-none">
+                <input type="number" placeholder="Price" step="0.01" oninput="updateLiveCalc()" class="item-price price-input input-glass border border-zinc-800 rounded-xl px-1 py-1.5 text-xs text-white text-right focus:outline-none">
+                <button type="button" onclick="removeLineItem('${rowId}')" class="text-zinc-500 hover:text-rose-400 px-1 font-bold text-lg leading-none">×</button>
+            `;
+            
+            div.querySelector('.item-desc').value = desc;
+            div.querySelector('.item-qty').value = qty;
+            div.querySelector('.item-price').value = price || '';
+            
+            container.appendChild(div);
+            updateLiveCalc();
+        }
+
+        function removeLineItem(rowId) {
+            const container = document.getElementById('lineItemsContainer');
+            if (container.children.length > 1) {
+                document.getElementById(rowId)?.remove();
+                updateLiveCalc();
+            } else {
+                showToast('At least one item is required', 'error');
+            }
+        }
+
+        function updateLiveCalc() {
+            const currency = document.getElementById('invCurrency').value;
+            const taxPercent = parseFloat(document.getElementById('taxPercent').value) || 0;
+            const discountPercent = parseFloat(document.getElementById('discountPercent').value) || 0;
+            
+            let subtotal = 0;
+            document.querySelectorAll('#lineItemsContainer > div').forEach(row => {
+                const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+                const price = parseFloat(row.querySelector('.item-price').value) || 0;
+                subtotal += (qty * price);
+            });
+
+            const taxVal = subtotal * (taxPercent / 100);
+            const discVal = subtotal * (discountPercent / 100);
+            const total = subtotal + taxVal - discVal;
+
+            document.getElementById('liveSubtotal').innerText = formatCurrency(subtotal, currency);
+            document.getElementById('liveTax').innerText = '+' + formatCurrency(taxVal, currency);
+            document.getElementById('liveDiscount').innerText = '-' + formatCurrency(discVal, currency);
+            document.getElementById('liveGrandTotal').innerText = formatCurrency(total, currency);
+        }
+
+        // ==========================================
+        // INVOICES MANAGEMENT
+        // ==========================================
+        async function fetchInvoices() {
+            if (!supabaseClient || !currentUser) return;
+            const { data } = await supabaseClient.from('invoices').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+            invoices = data || [];
+            renderInvoices();
+        }
+
+        function renderInvoices() {
+            const tbody = document.getElementById('invoiceList');
+            if (invoices.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="py-6 text-center text-zinc-500">No invoices generated</td></tr>';
+                return;
+            }
+            const today = new Date().toISOString().split('T')[0];
+            let html = '';
+            invoices.forEach(inv => {
+                const isPaid = inv.status === 'paid';
+                const isOverdue = !isPaid && inv.due_date && inv.due_date < today;
+                const statusClass = isPaid ? 'text-emerald-400' : (isOverdue ? 'text-rose-400' : 'text-amber-400');
+                
+                html += `<tr class="border-b border-zinc-800/40">
+                    <td class="py-2.5 font-mono text-xs text-amber-300">#${(inv.invoice_number || inv.id).slice(0, 8)}</td>
+                    <td class="text-xs font-semibold">${inv.client_name || 'N/A'}</td>
+                    <td class="text-xs font-mono font-bold">${formatCurrency(inv.amount, inv.currency || '₦')}</td>
+                    <td class="text-right">
+                        <span class="text-[10px] font-bold uppercase ${statusClass} mr-2">${isPaid ? 'Paid' : (isOverdue ? 'Overdue' : 'Pending')}</span>
+                        ${!isPaid ? `<button type="button" onclick="markAsPaid('${inv.id}')" class="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-1 rounded-lg hover:bg-emerald-500/40">✓</button>` : ''}
+                        <button type="button" onclick="downloadPDF('${inv.id}')" class="text-xs bg-amber-500/20 text-amber-300 px-2 py-1 rounded-lg hover:bg-amber-500/40 ml-1">PDF</button>
+                        <button type="button" onclick="deleteInvoice('${inv.id}')" class="text-xs bg-rose-500/20 text-rose-300 px-2 py-1 rounded-lg hover:bg-rose-500/40 ml-1">×</button>
+                    </td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+
+        async function markAsPaid(id) {
+            if (supabaseClient) await supabaseClient.from('invoices').update({ status: 'paid' }).eq('id', id);
+            const inv = invoices.find(i => i.id === id);
+            if (inv) inv.status = 'paid';
+            renderInvoices();
+            updateStats();
+            showToast('Invoice status set to Paid');
+        }
+
+        async function deleteInvoice(id) {
+            if (!confirm('Permanently delete this invoice?')) return;
+            if (supabaseClient) await supabaseClient.from('invoices').delete().eq('id', id);
+            invoices = invoices.filter(i => i.id !== id);
+            renderInvoices();
+            updateStats();
+            showToast('Invoice deleted');
+        }
+
+        function filterInvoices() {
+            const query = document.getElementById('invoiceSearch').value.toLowerCase();
+            const filter = document.getElementById('invoiceFilter').value;
+            const rows = document.querySelectorAll('#invoiceList tr');
+            const today = new Date().toISOString().split('T')[0];
+
+            invoices.forEach((inv, index) => {
+                const clientName = (inv.client_name || '').toLowerCase();
+                const invNum = (inv.invoice_number || '').toLowerCase();
+                const matchesSearch = clientName.includes(query) || invNum.includes(query);
+                
+                const isPaid = inv.status === 'paid';
+                const computedStatus = isPaid ? 'paid' : ((!isPaid && inv.due_date && inv.due_date < today) ? 'overdue' : 'pending');
+                const matchesStatus = filter === 'all' || computedStatus === filter;
+
+                if (rows[index]) rows[index].style.display = (matchesSearch && matchesStatus) ? '' : 'none';
+            });
+        }
+
+        document.getElementById('invoiceForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('invoiceSubmitBtn');
+            if (btn.disabled || !supabaseClient || !currentUser) return showToast('Cannot save invoice', 'error');
+
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+
+            try {
+                const client = document.getElementById('invClient').value.trim();
+                const email = document.getElementById('invEmail').value.trim();
+                const currency = document.getElementById('invCurrency').value;
+                const taxPercent = parseFloat(document.getElementById('taxPercent').value) || 0;
+                const discountPercent = parseFloat(document.getElementById('discountPercent').value) || 0;
+                const due = document.getElementById('invDue').value;
+
+                let items = [];
+                let baseAmount = 0;
+                document.querySelectorAll('#lineItemsContainer > div').forEach(row => {
+                    const desc = row.querySelector('.item-desc').value || 'Service Item';
+                    const qty = parseFloat(row.querySelector('.item-qty').value) || 1;
+                    const price = parseFloat(row.querySelector('.item-price').value) || 0;
+                    baseAmount += (qty * price);
+                    items.push({ description: desc, quantity: qty, unit_price: price, total: (qty * price) });
+                });
+
+                if (baseAmount <= 0) throw new Error('Specify valid item pricing');
+
+                let clientId = null;
+                const existing = clientRolodex.find(c => c.client_name.toLowerCase() === client.toLowerCase());
+                if (existing) {
+                    clientId = existing.id;
+                } else {
+                    const { data: cData } = await supabaseClient.from('clients').insert([{ user_id: currentUser.id, client_name: client, client_email: email }]).select().single();
+                    if (cData) clientId = cData.id;
+                    await fetchClients();
+                }
+
+                const taxAmount = baseAmount * (taxPercent / 100);
+                const discountAmount = baseAmount * (discountPercent / 100);
+                const invNumber = 'INV-' + Math.floor(100000 + Math.random() * 900000);
+
+                const { error } = await supabaseClient.from('invoices').insert([{
+                    user_id: currentUser.id,
+                    client_id: clientId,
+                    client_name: client,
+                    client_email: email,
+                    invoice_number: invNumber,
+                    amount: baseAmount + taxAmount - discountAmount,
+                    base_amount: baseAmount,
+                    tax_percent: taxPercent,
+                    discount_percent: discountPercent,
+                    currency,
+                    status: 'pending',
+                    due_date: due,
+                    pay_link: document.getElementById('payLink').value.trim(),
+                    bank_details: document.getElementById('bankDetails').value.trim(),
+                    items,
+                    logo_url: currentLogoBase64
+                }]);
+                
+                if (error) throw error;
+
+                showToast(`Invoice #${invNumber} generated!`);
+                this.reset();
+                document.getElementById('lineItemsContainer').innerHTML = '';
+                addLineItem();
+                document.getElementById('logoPreview').classList.add('hidden');
+                currentLogoBase64 = null;
+                document.getElementById('invDue').valueAsDate = new Date();
+                updateLiveCalc();
+                await fetchInvoices();
+                updateStats();
+            } catch (e) {
+                showToast(e.message || 'Error processing invoice', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Issue Elite Invoice';
+            }
+        });
+
+        // ==========================================
+        // EXPENSES MANAGEMENT
+        // ==========================================
+        async function fetchExpenses() {
+            if (!supabaseClient || !currentUser) return;
+            const { data } = await supabaseClient.from('expenses').select('*').eq('user_id', currentUser.id).order('expense_date', { ascending: false });
+            expenses = data || [];
+            renderExpenses();
+        }
+
+        function renderExpenses() {
+            const tbody = document.getElementById('expenseList');
+            if (expenses.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="py-6 text-center text-zinc-500">No expenses recorded</td></tr>';
+                return;
+            }
+            let html = '';
+            expenses.forEach(exp => {
+                html += `<tr class="border-b border-zinc-800/40">
+                    <td class="py-2.5">
+                        <p class="text-xs font-bold text-white">${exp.title}</p>
+                        <p class="text-[10px] text-zinc-500 uppercase font-mono">${exp.category}</p>
+                    </td>
+                    <td class="text-xs font-mono text-rose-400 font-bold">${formatCurrency(exp.amount)}</td>
+                    <td class="text-right">
+                        <button type="button" onclick="deleteExpense('${exp.id}')" class="text-xs bg-rose-500/20 text-rose-300 px-2 py-1 rounded-lg hover:bg-rose-500/40">×</button>
+                    </td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+
+        async function deleteExpense(id) {
+            if (!confirm('Remove expense record?')) return;
+            if (supabaseClient) await supabaseClient.from('expenses').delete().eq('id', id);
+            expenses = expenses.filter(e => e.id !== id);
+            renderExpenses();
+            updateStats();
+            showToast('Expense removed');
+        }
+
+        document.getElementById('expenseForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('expenseSubmitBtn');
+            if (!supabaseClient || !currentUser) return;
+
+            btn.disabled = true;
+            btn.textContent = 'Logging...';
+
+            try {
+                const title = document.getElementById('expTitle').value.trim();
+                const category = document.getElementById('expCategory').value;
+                const rawAmt = document.getElementById('expAmount').value.replace(/,/g, '');
+                const amount = parseFloat(rawAmt) || 0;
+                const expDate = document.getElementById('expDate').value;
+
+                if (amount <= 0) throw new Error('Enter valid expense amount');
+
+                const { error } = await supabaseClient.from('expenses').insert([{
+                    user_id: currentUser.id,
+                    title,
+                    category,
+                    amount,
+                    expense_date: expDate
+                }]);
+
+                if (error) throw error;
+
+                showToast('Expense logged!');
+                this.reset();
+                document.getElementById('expDate').valueAsDate = new Date();
+                await fetchExpenses();
+                updateStats();
+            } catch (err) {
+                showToast(err.message || 'Expense logging failed', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Log Capital Outflow';
+            }
+        });
+
+        // ==========================================
+        // ADMIN MONITOR & PAYMENT
+        // ==========================================
+        async function loadAdminUsers() {
+            if (!supabaseClient || !isAdmin) return;
+            try {
+                const { data } = await supabaseClient.from('profiles').select('email, role, subscription_status, created_at').order('created_at', { ascending: false });
+                const container = document.getElementById('adminUsers');
+                if (data && data.length > 0) {
+                    let html = `<div class="space-y-2 mt-2 font-mono text-xs">`;
+                    data.forEach(u => {
+                        html += `<div class="p-2 bg-black/40 rounded-xl border border-zinc-800 flex justify-between items-center">
+                            <span>${u.email}</span>
+                            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded ${u.subscription_status === 'pro' ? 'bg-amber-500/20 text-amber-300' : 'bg-zinc-800 text-zinc-400'}">${u.subscription_status}</span>
+                        </div>`;
+                    });
+                    html += `</div>`;
+                    container.innerHTML = html;
+                }
+            } catch (e) { console.warn('Admin load error:', e); }
+        }
+
+        function handlePayment(plan) {
+            if (typeof PaystackPop === 'undefined') return showToast('Paystack SDK unavailable', 'error');
+            const handler = PaystackPop.setup({
+                key: PAYSTACK_PUBLIC_KEY,
+                email: currentUser ? currentUser.email : 'user@apexflow.com',
+                amount: 1000000,
+                currency: 'NGN',
+                ref: 'AF_' + Math.floor(Math.random() * 1000000000),
+                callback: function(response) {
+                    showToast('Payment completed! Processing subscription upgrade.');
+                    closeUpgradeModal();
+                },
+                onClose: function() { showToast('Payment window closed', 'error'); }
+            });
+            handler.openIframe();
+        }
+
+        // ==========================================
+        // PDF GENERATION
+        // ==========================================
+        function downloadPDF(id) {
+            const inv = invoices.find(i => i.id === id);
+            if (!inv) return;
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const curr = inv.currency || '₦';
+
+            doc.setFillColor(15, 15, 18);
+            doc.rect(0, 0, 210, 297, 'F');
+            doc.setTextColor(212, 175, 55);
+            doc.setFontSize(22);
+            doc.text('ApexFlow Invoice', 20, 25);
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(10);
+            doc.text(`Invoice Ref: #${(inv.invoice_number || inv.id).slice(0, 10)}`, 20, 35);
+            doc.text(`Issued Date: ${new Date(inv.created_at || Date.now()).toLocaleDateString()}`, 20, 42);
+            doc.text(`Due Date: ${inv.due_date || 'On Receipt'}`, 20, 49);
+
+            doc.text(`Client: ${inv.client_name || 'Valued Partner'}`, 120, 35);
+            doc.text(`Email: ${inv.client_email || 'N/A'}`, 120, 42);
+
+            doc.setDrawColor(50, 50, 60);
+            doc.line(20, 56, 190, 56);
+
+            let y = 68;
+            doc.setTextColor(212, 175, 55);
+            doc.text('Item Description', 20, y);
+            doc.text('Qty', 120, y);
+            doc.text('Price', 145, y);
+            doc.text('Total', 175, y);
+
+            y += 8;
+            doc.setTextColor(240, 240, 240);
+            const items = Array.isArray(inv.items) ? inv.items : [];
+            items.forEach(item => {
+                doc.text(String(item.description).slice(0, 40), 20, y);
+                doc.text(String(item.quantity), 120, y);
+                doc.text(formatCurrency(item.unit_price, curr), 145, y);
+                doc.text(formatCurrency(item.total, curr), 175, y);
+                y += 8;
+            });
+
+            doc.line(20, y + 2, 190, y + 2);
+            y += 12;
+
+            doc.setFontSize(12);
+            doc.setTextColor(212, 175, 55);
+            doc.text(`Total Payable: ${formatCurrency(inv.amount, curr)}`, 130, y);
+
+            doc.save(`${inv.invoice_number || 'ApexFlow_Invoice'}.pdf`);
+            showToast('PDF downloaded successfully');
+        }
+
+        // ==========================================
+        // INITIALIZATION & TAB CONTROLS
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', async function() {
+            const expDateEl = document.getElementById('expDate');
+            const invDueEl = document.getElementById('invDue');
+            if (expDateEl) expDateEl.valueAsDate = new Date();
+            if (invDueEl) invDueEl.valueAsDate = new Date();
+            
+            addLineItem();
+            fetchOrganizationUsage();
+
+            try {
+                let hasSession = await handleRedirect();
+                if (!hasSession && supabaseClient) {
+                    const { data, error } = await supabaseClient.auth.getSession();
+                    if (!error && data?.session) {
+                        currentUser = data.session.user;
+                        await loadDashboard();
+                    }
+                }
+            } catch (error) {
+                console.warn('Initial session check offline:', error);
+            }
+        });
+
+        if (supabaseClient) {
+            supabaseClient.auth.onAuthStateChange(async (event, session) => {
+                if (session) {
+                    currentUser = session.user;
+                    await loadDashboard();
+                }
+            });
+        }
+        
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('tab-active', 'tab-active-expenses', 'tab-inactive');
+                    b.classList.add('tab-inactive');
+                });
+                this.classList.remove('tab-inactive');
+                this.classList.add('tab-active');
+                document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+                document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+            });
+        });
+
+        function openTerms() { document.getElementById('termsModal').classList.remove('hidden'); }
+        function closeTerms() { document.getElementById('termsModal').classList.add('hidden'); }
+        function openTutorial() { document.getElementById('tutorialModal').classList.remove('hidden'); }
+        function closeTutorial() { document.getElementById('tutorialModal').classList.add('hidden'); localStorage.setItem('apexflow_tutorial_seen', 'true'); }
+        function openUpgradeModal() { document.getElementById('upgradeModal').classList.remove('hidden'); }
+        function closeUpgradeModal() { document.getElementById('upgradeModal').classList.add('hidden'); }
+    </script>
+</body>
+</html>
