@@ -68,7 +68,7 @@
         }
     </script>
 
-    <!-- Dependencies -->
+    <!-- External Dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -455,7 +455,7 @@
             </div>
         </div>
 
-        <!-- TAB: Expenses (LOCKED TO GLOWING ROSE THEME) -->
+        <!-- TAB: Expenses (GLOWING ROSE THEME) -->
         <div id="tab-expenses" class="tab-content">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
                 <!-- Rose Glass Card Form -->
@@ -536,7 +536,7 @@
                     </button>
                 </div>
 
-                <!-- HIDDEN DANGER ZONE / ACCOUNT DELETION TRIGGER -->
+                <!-- ADVANCED SETTINGS & ACCOUNT DELETION TRIGGER -->
                 <div class="pt-6 border-t border-zinc-800 text-center">
                     <button type="button" onclick="toggleDangerZone()" class="text-[11px] font-mono text-zinc-600 hover:text-zinc-400 uppercase tracking-widest transition-colors">
                         ⚙️ Advanced Workspace Security Settings
@@ -778,7 +778,7 @@
             showToast('Signed out securely');
         }
 
-        // DANGER ZONE / ACCOUNT DELETION LOGIC
+        /* Danger Zone / Deletion */
         function toggleDangerZone() {
             const dz = document.getElementById('dangerZoneContainer');
             dz.classList.toggle('hidden');
@@ -974,10 +974,15 @@
             invoices.forEach(inv => {
                 const isPaid = inv.status === 'paid';
                 const isOverdue = !isPaid && inv.due_date && inv.due_date < today;
+                const computedStatus = isPaid ? 'paid' : (isOverdue ? 'overdue' : 'pending');
                 const statusClass = isPaid ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' : (isOverdue ? 'text-rose-400 bg-rose-500/10 border-rose-500/20' : 'text-amber-400 bg-amber-500/10 border-amber-500/20');
-                html += `<tr>
-                    <td class="py-4 px-5 font-mono text-[11px] font-bold text-amber-500/80">#${(inv.invoice_number || inv.id).slice(0, 8)}</td>
-                    <td class="py-4 px-5 text-sm font-bold text-white">${inv.client_name || 'N/A'}</td>
+                
+                const refId = (inv.invoice_number || inv.id).slice(0, 8);
+                const clientName = inv.client_name || 'N/A';
+
+                html += `<tr data-client="${clientName.toLowerCase()}" data-ref="${refId.toLowerCase()}" data-status="${computedStatus}">
+                    <td class="py-4 px-5 font-mono text-[11px] font-bold text-amber-500/80">#${refId}</td>
+                    <td class="py-4 px-5 text-sm font-bold text-white">${clientName}</td>
                     <td class="py-4 px-5 text-sm font-mono font-black text-white">${formatCurrency(inv.amount, inv.currency || '₦')}</td>
                     <td class="py-4 px-5 text-right whitespace-nowrap">
                         <span class="text-[9px] font-black uppercase px-2.5 py-1.5 rounded-lg border ${statusClass} mr-3">${isPaid ? 'Paid' : (isOverdue ? 'Overdue' : 'Pending')}</span>
@@ -1009,15 +1014,23 @@
         }
 
         function filterInvoices() {
-            const query = document.getElementById('invoiceSearch').value.toLowerCase();
+            const query = document.getElementById('invoiceSearch').value.toLowerCase().trim();
             const filter = document.getElementById('invoiceFilter').value;
             const rows = document.querySelectorAll('#invoiceList tr');
-            const today = new Date().toISOString().split('T')[0];
-            invoices.forEach((inv, index) => {
-                const matchesSearch = (inv.client_name || '').toLowerCase().includes(query) || (inv.invoice_number || '').toLowerCase().includes(query);
-                const computedStatus = inv.status === 'paid' ? 'paid' : ((inv.due_date && inv.due_date < today) ? 'overdue' : 'pending');
-                const matchesStatus = filter === 'all' || computedStatus === filter;
-                if (rows[index]) rows[index].style.display = (matchesSearch && matchesStatus) ? '' : 'none';
+            
+            rows.forEach(row => {
+                const client = row.getAttribute('data-client') || '';
+                const ref = row.getAttribute('data-ref') || '';
+                const status = row.getAttribute('data-status') || '';
+
+                const matchesSearch = client.includes(query) || ref.includes(query);
+                const matchesStatus = (filter === 'all' || status === filter);
+
+                if (matchesSearch && matchesStatus) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
             });
         }
 
@@ -1191,13 +1204,16 @@
             if (!inv) return;
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            const curr = inv.currency || '₦';
+            
+            // Format currency code for jsPDF safe rendering
+            const rawCurr = inv.currency || 'NGN';
+            const safeCurr = rawCurr === '₦' ? 'NGN ' : rawCurr + ' ';
 
             // Background canvas layout
             doc.setFillColor(15, 15, 17);
             doc.rect(0, 0, 210, 297, 'F');
             
-            // Render Base64 Logo if available
+            // Render Logo if present
             if (inv.logo_url) {
                 try {
                     doc.addImage(inv.logo_url, 'PNG', 20, 15, 25, 25);
@@ -1231,7 +1247,7 @@
             items.forEach(item => {
                 doc.text(String(item.description).slice(0, 38), 20, y);
                 doc.text(String(item.quantity), 120, y);
-                doc.text(formatCurrency(item.total, curr), 165, y);
+                doc.text(formatCurrency(item.total, safeCurr), 165, y);
                 y += 8;
             });
 
@@ -1266,7 +1282,7 @@
             function finalizePDF() {
                 doc.setTextColor(245, 158, 11);
                 doc.setFontSize(14);
-                doc.text(`Total Payable: ${formatCurrency(inv.amount, curr)}`, 115, y + 36);
+                doc.text(`Total Payable: ${formatCurrency(inv.amount, safeCurr)}`, 115, y + 36);
                 doc.save(`${inv.invoice_number || 'ApexFlow_Invoice'}.pdf`);
                 showToast('PDF generated! 📄');
             }
@@ -1299,7 +1315,7 @@
         function openTerms() { document.getElementById('termsModal').classList.remove('hidden'); }
         function closeTerms() { document.getElementById('termsModal').classList.add('hidden'); }
         function openTutorial() { document.getElementById('tutorialModal').classList.remove('hidden'); localStorage.setItem('apexflow_tutorial_seen', 'true'); }
-        function closeTutorial() { document.getElementById('tutorialModal').classList.remove('hidden'); document.getElementById('tutorialModal').classList.add('hidden'); }
+        function closeTutorial() { document.getElementById('tutorialModal').classList.add('hidden'); }
         function openUpgradeModal() { document.getElementById('upgradeModal').classList.remove('hidden'); }
         function closeUpgradeModal() { document.getElementById('upgradeModal').classList.add('hidden'); }
     </script>
