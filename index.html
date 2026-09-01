@@ -712,6 +712,38 @@
             return typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'id_' + Math.random().toString(36).substring(2, 11);
         }
 
+        function initializeAuth() {
+            if (!supabaseClient) return;
+            
+            // Listen for auth state changes (captures the OAuth redirect token from the URL automatically)
+            supabaseClient.auth.onAuthStateChange(async (event, session) => {
+                if (session?.user) {
+                    currentUser = session.user;
+                    // Only load if dashboard is currently hidden to prevent double-rendering
+                    if (document.getElementById('dashScreen').classList.contains('hidden')) {
+                        await loadDashboard();
+                    }
+                } else {
+                    // Reset to unauthenticated view
+                    currentUser = null;
+                    document.getElementById('authContainer').classList.remove('hidden');
+                    document.getElementById('dashScreen').classList.add('hidden');
+                    document.getElementById('waitlistModal').classList.add('hidden');
+                    document.getElementById('authLoading').classList.add('hidden');
+                }
+            });
+
+            // Catch existing active sessions natively on page load 
+            supabaseClient.auth.getSession().then(({ data: { session } }) => {
+                if (session?.user) {
+                    currentUser = session.user;
+                    if (document.getElementById('dashScreen').classList.contains('hidden')) {
+                        loadDashboard();
+                    }
+                }
+            });
+        }
+
         async function signInWithGoogle() {
             if (!supabaseClient) return;
             try {
@@ -728,20 +760,6 @@
                 errEl.innerText = e.message || 'Sign-in failed';
                 errEl.classList.remove('hidden');
             }
-        }
-
-        async function handleRedirect() {
-            if (!supabaseClient) return false;
-            try {
-                const { data, error } = await supabaseClient.auth.getSession();
-                if (error) throw error;
-                if (data?.session) {
-                    currentUser = data.session.user;
-                    await loadDashboard();
-                    return true;
-                }
-                return false;
-            } catch (e) { return false; }
         }
 
         async function fetchUserProfile(retries = 3, delay = 800) {
@@ -1311,14 +1329,7 @@
             document.getElementById('invDue').value = today;
             addLineItem();
             fetchOrganizationUsage();
-            let hasSession = await handleRedirect();
-            if (!hasSession && supabaseClient) {
-                const { data } = await supabaseClient.auth.getSession();
-                if (data?.session) {
-                    currentUser = data.session.user;
-                    await loadDashboard();
-                }
-            }
+            initializeAuth();
         });
 
         document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -1333,7 +1344,7 @@
         function openTerms() { document.getElementById('termsModal').classList.remove('hidden'); }
         function closeTerms() { document.getElementById('termsModal').classList.add('hidden'); }
         function openTutorial() { document.getElementById('tutorialModal').classList.remove('hidden'); localStorage.setItem('apexflow_tutorial_seen', 'true'); }
-        function closeTutorial() { document.getElementById('tutorialModal').classList.hidden = true; document.getElementById('tutorialModal').classList.add('hidden'); }
+        function closeTutorial() { document.getElementById('tutorialModal').classList.add('hidden'); }
         function openUpgradeModal() { document.getElementById('upgradeModal').classList.remove('hidden'); }
         function closeUpgradeModal() { document.getElementById('upgradeModal').classList.add('hidden'); }
     </script>
