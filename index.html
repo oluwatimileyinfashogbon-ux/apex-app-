@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ApexFlow - Elite Global Invoicing & Revenue Suite</title>
+
+    <!-- Inline critical background so there's no white flash before Tailwind CDN loads -->
+    <style>
+        html, body { background-color: #030303 !important; }
+    </style>
     
     <!-- Premium Font: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -239,8 +244,13 @@
     <div id="qrcode-hidden" class="fixed opacity-0 pointer-events-none" style="top:-9999px;left:-9999px"></div>
     <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none"></div>
 
+    <!-- FULL-PAGE LOADER: shown until we know whether there's an active session (avoids login-screen flash after OAuth redirect) -->
+    <div id="globalLoader" class="fixed inset-0 z-50 flex items-center justify-center bg-[#030303]">
+        <div class="spinner"></div>
+    </div>
+
     <!-- AUTHENTICATION VIEW -->
-    <div id="authContainer" class="min-h-screen flex items-center justify-center p-4 relative z-10">
+    <div id="authContainer" class="hidden min-h-screen flex items-center justify-center p-4 relative z-10">
         <div class="glass-card p-8 md:p-12 rounded-[2.5rem] w-full max-w-md animate-slide-up relative overflow-hidden group text-center">
             
             <div class="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-amber-300 via-amber-500 to-amber-700 text-black font-black mb-8 animate-logo-float shadow-[0_0_50px_rgba(245,158,11,0.4)] border border-amber-300/50 p-5">
@@ -713,8 +723,20 @@
         }
 
         function initializeAuth() {
-            if (!supabaseClient) return;
-            
+            if (!supabaseClient) {
+                document.getElementById('globalLoader').classList.add('hidden');
+                document.getElementById('authContainer').classList.remove('hidden');
+                return;
+            }
+
+            let loaderDismissed = false;
+            const dismissLoader = () => {
+                if (!loaderDismissed) {
+                    loaderDismissed = true;
+                    document.getElementById('globalLoader').classList.add('hidden');
+                }
+            };
+
             // Listen for auth state changes (captures the OAuth redirect token from the URL automatically)
             supabaseClient.auth.onAuthStateChange(async (event, session) => {
                 if (session?.user) {
@@ -723,25 +745,26 @@
                     if (document.getElementById('dashScreen').classList.contains('hidden')) {
                         await loadDashboard();
                     }
+                    dismissLoader();
                 } else {
                     // Reset to unauthenticated view
                     currentUser = null;
-                    document.getElementById('authContainer').classList.remove('hidden');
                     document.getElementById('dashScreen').classList.add('hidden');
                     document.getElementById('waitlistModal').classList.add('hidden');
                     document.getElementById('authLoading').classList.add('hidden');
+                    document.getElementById('authContainer').classList.remove('hidden');
+                    dismissLoader();
                 }
             });
 
-            // Catch existing active sessions natively on page load 
-            supabaseClient.auth.getSession().then(({ data: { session } }) => {
-                if (session?.user) {
-                    currentUser = session.user;
-                    if (document.getElementById('dashScreen').classList.contains('hidden')) {
-                        loadDashboard();
-                    }
+            // Safety net: if Supabase hasn't fired an auth event within 4s (e.g. network issue),
+            // reveal the login screen rather than leaving the user stuck on the loader.
+            setTimeout(() => {
+                if (!loaderDismissed) {
+                    document.getElementById('authContainer').classList.remove('hidden');
+                    dismissLoader();
                 }
-            });
+            }, 4000);
         }
 
         async function signInWithGoogle() {
