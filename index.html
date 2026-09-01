@@ -671,6 +671,10 @@
             console.error('❌ Supabase init error:', e);
         }
 
+        function getTodayISO() {
+            return new Date().toLocaleDateString('en-CA');
+        }
+
         function showToast(msg, type = 'success') {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
@@ -688,11 +692,16 @@
 
         function formatNumberInput(el) {
             let value = el.value.replace(/,/g, '');
-            if (!isNaN(value) && value.length > 0) {
-                let parts = value.split('.');
-                parts[0] = parseInt(parts[0], 10).toLocaleString('en-US');
-                el.value = parts.join('.');
+            if (value === '' || value === '.') return;
+            if (isNaN(value)) {
+                el.value = value.slice(0, -1);
+                return;
             }
+            let parts = value.split('.');
+            if (parts[0] !== '' && !isNaN(parts[0])) {
+                parts[0] = parseInt(parts[0], 10).toLocaleString('en-US');
+            }
+            el.value = parts.join('.');
         }
 
         function formatCurrency(amount, currency = '₦') {
@@ -969,7 +978,7 @@
                 tbody.innerHTML = '<tr><td colspan="4" class="py-12 text-center text-zinc-500 font-medium text-xs uppercase tracking-widest">No invoices generated</td></tr>';
                 return;
             }
-            const today = new Date().toISOString().split('T')[0];
+            const today = getTodayISO();
             let html = '';
             invoices.forEach(inv => {
                 const isPaid = inv.status === 'paid';
@@ -1099,7 +1108,7 @@
                 addLineItem();
                 document.getElementById('logoPreview').classList.add('hidden');
                 currentLogoBase64 = null;
-                document.getElementById('invDue').valueAsDate = new Date();
+                document.getElementById('invDue').value = getTodayISO();
                 updateLiveCalc();
                 await fetchInvoices();
                 updateStats();
@@ -1164,7 +1173,7 @@
                 await supabaseClient.from('expenses').insert([{ user_id: currentUser.id, title, category, amount, expense_date: expDate }]);
                 showToast('Capital outflow logged under Rose Suite!');
                 this.reset();
-                document.getElementById('expDate').valueAsDate = new Date();
+                document.getElementById('expDate').value = getTodayISO();
                 await fetchExpenses();
                 updateStats();
             } catch (err) {
@@ -1178,12 +1187,14 @@
             if (!supabaseClient || !isAdmin) return;
             const { data } = await supabaseClient.from('profiles').select('email, role, subscription_status, created_at').order('created_at', { ascending: false });
             const container = document.getElementById('adminUsers');
-            if (data) {
+            if (data && data.length > 0) {
                 let html = `<div class="space-y-2 font-mono text-xs">`;
                 data.forEach(u => {
                     html += `<div class="p-3 bg-zinc-900 rounded-lg flex justify-between items-center"><span class="text-zinc-300 font-medium">${u.email}</span><span class="text-[9px] font-black uppercase px-2 py-1 rounded-md bg-amber-500/10 text-amber-400">${u.subscription_status}</span></div>`;
                 });
                 container.innerHTML = html + `</div>`;
+            } else {
+                container.innerHTML = `<p class="text-xs text-zinc-500">No registered profiles found.</p>`;
             }
         }
 
@@ -1205,9 +1216,9 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
-            // Format currency code for jsPDF safe rendering
-            const rawCurr = inv.currency || 'NGN';
-            const safeCurr = rawCurr === '₦' ? 'NGN ' : rawCurr + ' ';
+            // Map currency symbols to safe ISO string codes for standard PDF fonts
+            const currencyMap = { '₦': 'NGN ', '$': '$ ', '€': 'EUR ', '£': 'GBP ' };
+            const safeCurr = currencyMap[inv.currency] || (inv.currency ? inv.currency + ' ' : 'NGN ');
 
             // Background canvas layout
             doc.setFillColor(15, 15, 17);
@@ -1269,12 +1280,18 @@
                 new QRCode(qrDiv, { text: inv.payment_link, width: 80, height: 80 });
                 setTimeout(() => {
                     const qrCanvas = qrDiv.querySelector('canvas');
+                    const qrImg = qrDiv.querySelector('img');
+                    let qrDataUrl = null;
                     if (qrCanvas) {
-                        const qrDataUrl = qrCanvas.toDataURL('image/png');
+                        qrDataUrl = qrCanvas.toDataURL('image/png');
+                    } else if (qrImg && qrImg.src) {
+                        qrDataUrl = qrImg.src;
+                    }
+                    if (qrDataUrl) {
                         doc.addImage(qrDataUrl, 'PNG', 150, y - 5, 30, 30);
                     }
                     finalizePDF();
-                }, 100);
+                }, 150);
             } else {
                 finalizePDF();
             }
@@ -1289,8 +1306,9 @@
         }
 
         document.addEventListener('DOMContentLoaded', async function() {
-            document.getElementById('expDate').valueAsDate = new Date();
-            document.getElementById('invDue').valueAsDate = new Date();
+            const today = getTodayISO();
+            document.getElementById('expDate').value = today;
+            document.getElementById('invDue').value = today;
             addLineItem();
             fetchOrganizationUsage();
             let hasSession = await handleRedirect();
@@ -1315,7 +1333,7 @@
         function openTerms() { document.getElementById('termsModal').classList.remove('hidden'); }
         function closeTerms() { document.getElementById('termsModal').classList.add('hidden'); }
         function openTutorial() { document.getElementById('tutorialModal').classList.remove('hidden'); localStorage.setItem('apexflow_tutorial_seen', 'true'); }
-        function closeTutorial() { document.getElementById('tutorialModal').classList.add('hidden'); }
+        function closeTutorial() { document.getElementById('tutorialModal').classList.hidden = true; document.getElementById('tutorialModal').classList.add('hidden'); }
         function openUpgradeModal() { document.getElementById('upgradeModal').classList.remove('hidden'); }
         function closeUpgradeModal() { document.getElementById('upgradeModal').classList.add('hidden'); }
     </script>
