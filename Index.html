@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dish Gallery - Meiran Direct</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Paystack Inline SDK -->
+    <script src="https://js.paystack.co/v1/inline.js"></script>
+    
+    <style>
+        :root {
+            --bg-obsidian: #09090b;
+            --card-wine-glass: rgba(26, 8, 14, 0.75);
+            --border-rose-subtle: rgba(251, 113, 133, 0.25);
+            --border-rose-glowing: rgba(244, 63, 94, 0.7);
+            --rose-glow-primary: 0 0 20px rgba(244, 63, 94, 0.45);
+            --rose-glow-intense: 0 0 35px rgba(244, 63, 94, 0.85);
+        }
+
+        body {
+            background-color: var(--bg-obsidian);
+            color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(88, 28, 135, 0.2) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(159, 18, 57, 0.25) 0%, transparent 50%);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        .rose-glass-card {
+            background: var(--card-wine-glass);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-rose-subtle);
+            border-radius: 18px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .rose-glass-card:hover {
+            border-color: var(--border-rose-glowing);
+            box-shadow: var(--rose-glow-primary);
+        }
+
+        .btn-rose-glow {
+            background: linear-gradient(135deg, #e11d48 0%, #be123c 100%);
+            color: #ffffff;
+            font-weight: 700;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            box-shadow: var(--rose-glow-primary);
+            transition: all 0.25s ease;
+        }
+
+        .btn-rose-glow:active {
+            transform: scale(0.97);
+            box-shadow: var(--rose-glow-intense);
+        }
+
+        .input-rose-glass {
+            background: rgba(15, 2, 8, 0.85);
+            border: 1px solid var(--border-rose-subtle);
+            color: #ffffff;
+            border-radius: 10px;
+        }
+
+        .input-rose-glass:focus {
+            outline: none;
+            border-color: #f43f5e;
+            box-shadow: 0 0 12px rgba(244, 63, 94, 0.5);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #09090b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #be123c;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="pb-28">
+
+    <!-- TOP HEADER / LOCATION BADGE -->
+    <header class="sticky top-0 z-40 bg-black/80 backdrop-blur-md border-b border-rose-950/50 px-4 py-3">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="w-9 h-9 rounded-full bg-rose-950 border border-rose-500/40 flex items-center justify-center font-bold text-rose-400">
+                    DG
+                </div>
+                <div>
+                    <h1 class="font-bold text-base tracking-wide text-white leading-tight">Dish Gallery</h1>
+                    <p class="text-xs text-rose-300/80">Meiran Road Outlet</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <span class="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-1 rounded-full font-semibold">
+                    📍 Near Grocery Bazzar
+                </span>
+                <button onclick="toggleAdminModal()" class="text-xs text-rose-400/80 hover:text-rose-300 underline pl-1">
+                    Admin
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN APP CONTAINER -->
+    <main class="max-w-md mx-auto px-4 pt-4">
+
+        <!-- PROMO BANNER -->
+        <div class="rose-glass-card p-4 mb-5 relative overflow-hidden">
+            <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-rose-600/10 rounded-full blur-xl pointer-events-none"></div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-rose-400 bg-rose-950/60 px-2.5 py-0.5 rounded-full border border-rose-800/40">Direct Order Advantage</span>
+            <h2 class="text-lg font-bold text-white mt-1.5">Bypass Delivery Markup</h2>
+            <p class="text-xs text-slate-300 mt-0.5">Order direct from 85 Meiran Rd kitchen. Fast local dispatch to your door.</p>
+        </div>
+
+        <!-- CATEGORY NAV (HORIZONTALLY SCROLLABLE) -->
+        <div class="flex gap-2 overflow-x-auto pb-3 mb-4 no-scrollbar">
+            <button onclick="filterCategory('all')" id="cat-all" class="cat-btn px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap btn-rose-glow">
+                🔥 All Items
+            </button>
+            <button onclick="filterCategory('bakery')" id="cat-bakery" class="cat-btn px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-rose-950/40 text-slate-300 border border-rose-900/30">
+                🍞 Fresh Bakery
+            </button>
+            <button onclick="filterCategory('meals')" id="cat-meals" class="cat-btn px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-rose-950/40 text-slate-300 border border-rose-900/30">
+                🍛 Hot Meals
+            </button>
+            <button onclick="filterCategory('proteins')" id="cat-proteins" class="cat-btn px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-rose-950/40 text-slate-300 border border-rose-900/30">
+                🍗 Proteins
+            </button>
+            <button onclick="filterCategory('drinks')" id="cat-drinks" class="cat-btn px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap bg-rose-950/40 text-slate-300 border border-rose-900/30">
+                🥤 Drinks
+            </button>
+        </div>
+
+        <!-- PRODUCT GRID -->
+        <div id="product-grid" class="grid grid-cols-1 gap-3.5">
+            <!-- Rendered Dynamically via JS -->
+        </div>
+    </main>
+
+    <!-- FLOATING CART BAR (STICKY BOTTOM) -->
+    <div id="cart-bar" class="fixed bottom-0 left-0 right-0 z-30 p-4 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none hidden">
+        <div class="max-w-md mx-auto pointer-events-auto">
+            <button onclick="openCheckoutModal()" class="w-full btn-rose-glow py-3.5 px-5 flex justify-between items-center text-sm shadow-2xl">
+                <div class="flex items-center gap-2">
+                    <span id="cart-count-badge" class="bg-white text-rose-900 text-xs font-black w-6 h-6 rounded-full flex items-center justify-center">0</span>
+                    <span class="font-bold">View Selected Order</span>
+                </div>
+                <span id="cart-total-badge" class="font-black text-base">₦0</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- CHECKOUT MODAL -->
+    <div id="checkout-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center hidden p-0 sm:p-4">
+        <div class="rose-glass-card w-full max-w-md max-h-[90vh] overflow-y-auto rounded-b-none sm:rounded-2xl p-5 border-t border-rose-500/40">
+            <div class="flex justify-between items-center mb-4 border-b border-rose-900/40 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <span>🛒</span> Confirm Checkout
+                </h3>
+                <button onclick="closeCheckoutModal()" class="text-slate-400 hover:text-white text-lg p-1">✕</button>
+            </div>
+
+            <!-- CART ITEMS LIST -->
+            <div id="cart-items-container" class="space-y-2 mb-4 max-h-40 overflow-y-auto pr-1">
+                <!-- Dynamically Inserted -->
+            </div>
+
+            <!-- DELIVERY DETAILS FORM -->
+            <form id="checkout-form" onsubmit="executePayment(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-rose-300 mb-1">Full Name</label>
+                    <input type="text" id="cust-name" required placeholder="e.g. Adebayo Kunle" class="w-full input-rose-glass p-2.5 text-xs">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-rose-300 mb-1">WhatsApp Phone Number</label>
+                    <input type="tel" id="cust-phone" required placeholder="e.g. 08012345678" class="w-full input-rose-glass p-2.5 text-xs">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-rose-300 mb-1">Select Delivery Zone (Meiran Axis)</label>
+                    <select id="delivery-zone" onchange="updateCalculations()" class="w-full input-rose-glass p-2.5 text-xs">
+                        <option value="500">Meiran Junction / Grocery Bazaar Axis (₦500)</option>
+                        <option value="700">Command / Ajasa-Command Axis (₦700)</option>
+                        <option value="1000">Abule Egba / Ile-Epo Junction (₦1,000)</option>
+                        <option value="0">Store Pickup - 85 Meiran Rd (Free)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-rose-300 mb-1">Exact Address / Landmark</label>
+                    <textarea id="cust-address" required rows="2" placeholder="Street name, house number, or nearby landmark" class="w-full input-rose-glass p-2 text-xs"></textarea>
+                </div>
+
+                <!-- ORDER SUMMARY BOX -->
+                <div class="bg-black/40 p-3 rounded-xl border border-rose-950 space-y-1.5 text-xs my-3">
+                    <div class="flex justify-between text-slate-400">
+                        <span>Items Subtotal:</span>
+                        <span id="summary-subtotal" class="text-slate-200">₦0</span>
+                    </div>
+                    <div class="flex justify-between text-slate-400">
+                        <span>Delivery Fee:</span>
+                        <span id="summary-delivery" class="text-slate-200">₦500</span>
+                    </div>
+                    <div class="flex justify-between font-bold text-white pt-1.5 border-t border-rose-900/30 text-sm">
+                        <span>Total Payable:</span>
+                        <span id="summary-total" class="text-rose-400">₦0</span>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full btn-rose-glow py-3 font-bold text-sm mt-2">
+                    Pay Now via Paystack
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADMIN MODAL -->
+    <div id="admin-modal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center hidden p-4">
+        <div class="rose-glass-card w-full max-w-md p-5 border border-amber-500/30">
+            <div class="flex justify-between items-center mb-4 border-b border-rose-900/40 pb-2">
+                <h3 class="text-sm font-bold text-amber-400 flex items-center gap-1.5">
+                    ⚙️ Store Manager Portal
+                </h3>
+                <button onclick="toggleAdminModal()" class="text-slate-400 hover:text-white">✕</button>
+            </div>
+
+            <!-- PIN PROTECTION -->
+            <div id="admin-auth-sec" class="space-y-3">
+                <p class="text-xs text-slate-300">Enter Manager PIN to edit stock & prices:</p>
+                <input type="password" id="admin-pin" placeholder="Enter PIN (Demo: 4092)" class="w-full input-rose-glass p-2.5 text-xs text-center tracking-widest text-lg">
+                <button onclick="verifyAdminPin()" class="w-full bg-amber-600 hover:bg-amber-500 text-black font-bold py-2.5 rounded-xl text-xs">
+                    Unlock Manager Controls
+                </button>
+            </div>
+
+            <!-- ADMIN CONTROLS (HIDDEN BY DEFAULT) -->
+            <div id="admin-controls-sec" class="hidden space-y-4">
+                <div class="bg-amber-950/20 border border-amber-800/30 p-2.5 rounded-xl text-[11px] text-amber-300">
+                    Live Stock Manager: Toggle items out-of-stock instantly during busy kitchen shifts.
+                </div>
+                <div id="admin-item-list" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    <!-- Dynamically Populated -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- APPLICATION ENGINE SCRIPT -->
+    <script>
+        // MASTER PRODUCT CATALOG (LOCAL MEMORY STORE)
+        let products = [
+            { id: '1', name: 'Dish Gallery Special Bread', category: 'bakery', price: 1400, inStock: true, desc: 'Freshly baked oven loaf' },
+            { id: '2', name: 'Spicy Jollof Rice + Pepper Turkey', category: 'meals', price: 5500, inStock: true, desc: 'Smoky Jollof with jumbo turkey' },
+            { id: '3', name: 'Peppered Panla Fish Combo', category: 'proteins', price: 2200, inStock: true, desc: 'Deep fried spicy Panla' },
+            { id: '4', name: 'Meat Pie (Special)', category: 'bakery', price: 900, inStock: true, desc: 'Minced beef pastry' },
+            { id: '5', name: 'Fried Rice + Sauced Chicken', category: 'meals', price: 5500, inStock: true, desc: 'Seasoned fried rice & chicken' },
+            { id: '6', name: 'Chilled Hollandia Yogurt (1L)', category: 'drinks', price: 2100, inStock: true, desc: '1 Litre chilled' }
+        ];
+
+        let cart = [];
+        const PAYSTACK_PUBLIC_KEY = 'pk_test_sample_key_replace_with_yours'; // Replace with real key
+        const MEIRAN_WHATSAPP_LINE = '2347080353569';
+
+        // INITIALIZE APP
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProducts(products);
+        });
+
+        // RENDER PRODUCTS GRID
+        function renderProducts(items) {
+            const grid = document.getElementById('product-grid');
+            grid.innerHTML = items.map(item => `
+                <div class="rose-glass-card p-3.5 flex justify-between items-center gap-3 ${!item.inStock ? 'opacity-50' : ''}">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-bold text-sm text-white">${item.name}</h3>
+                            ${!item.inStock ? '<span class="text-[9px] bg-red-950 text-red-400 border border-red-800 px-1.5 py-0.5 rounded">SOLD OUT</span>' : ''}
+                        </div>
+                        <p class="text-xs text-slate-400 mt-0.5">${item.desc}</p>
+                        <p class="text-sm font-black text-rose-400 mt-1">₦${item.price.toLocaleString()}</p>
+                    </div>
+                    <div>
+                        ${item.inStock ? `
+                            <button onclick="addToCart('${item.id}')" class="btn-rose-glow px-3 py-1.5 text-xs font-bold">
+                                + Add
+                            </button>
+                        ` : `
+                            <button disabled class="bg-slate-800 text-slate-500 px-3 py-1.5 text-xs rounded-xl cursor-not-allowed">
+                                Unavailable
+                            </button>
+                        `}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // CATEGORY FILTER
+        function filterCategory(cat) {
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.classList.remove('btn-rose-glow');
+                btn.classList.add('bg-rose-950/40', 'text-slate-300', 'border', 'border-rose-900/30');
+            });
+
+            const activeBtn = document.getElementById(`cat-${cat}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-rose-950/40', 'text-slate-300', 'border', 'border-rose-900/30');
+                activeBtn.classList.add('btn-rose-glow');
+            }
+
+            if (cat === 'all') {
+                renderProducts(products);
+            } else {
+                renderProducts(products.filter(p => p.category === cat));
+            }
+        }
+
+        // CART LOGIC
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product || !product.inStock) return;
+
+            const existing = cart.find(item => item.id === productId);
+            if (existing) {
+                existing.qty += 1;
+            } else {
+                cart.push({ ...product, qty: 1 });
+            }
+
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const countBadge = document.getElementById('cart-count-badge');
+            const totalBadge = document.getElementById('cart-total-badge');
+            const cartBar = document.getElementById('cart-bar');
+
+            const totalItems = cart.reduce((acc, i) => acc + i.qty, 0);
+            const subtotal = cart.reduce((acc, i) => acc + (i.price * i.qty), 0);
+
+            countBadge.innerText = totalItems;
+            totalBadge.innerText = `₦${subtotal.toLocaleString()}`;
+
+            if (totalItems > 0) {
+                cartBar.classList.remove('hidden');
+            } else {
+                cartBar.classList.add('hidden');
+            }
+        }
+
+        // CHECKOUT CALCULATIONS
+        function updateCalculations() {
+            const subtotal = cart.reduce((acc, i) => acc + (i.price * i.qty), 0);
+            const deliveryFee = parseInt(document.getElementById('delivery-zone').value || '0');
+            const total = subtotal + deliveryFee;
+
+            document.getElementById('summary-subtotal').innerText = `₦${subtotal.toLocaleString()}`;
+            document.getElementById('summary-delivery').innerText = `₦${deliveryFee.toLocaleString()}`;
+            document.getElementById('summary-total').innerText = `₦${total.toLocaleString()}`;
+        }
+
+        function openCheckoutModal() {
+            const container = document.getElementById('cart-items-container');
+            container.innerHTML = cart.map(item => `
+                <div class="flex justify-between items-center text-xs bg-black/30 p-2 rounded-lg border border-rose-950">
+                    <div>
+                        <p class="font-bold text-white">${item.name}</p>
+                        <p class="text-rose-400">₦${item.price.toLocaleString()} x ${item.qty}</p>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button onclick="changeQty('${item.id}', -1)" class="w-5 h-5 bg-rose-950 text-rose-300 rounded font-bold">-</button>
+                        <span class="px-1 text-white">${item.qty}</span>
+                        <button onclick="changeQty('${item.id}', 1)" class="w-5 h-5 bg-rose-950 text-rose-300 rounded font-bold">+</button>
+                    </div>
+                </div>
+            `).join('');
+
+            updateCalculations();
+            document.getElementById('checkout-modal').classList.remove('hidden');
+        }
+
+        function changeQty(id, delta) {
+            const item = cart.find(i => i.id === id);
+            if (item) {
+                item.qty += delta;
+                if (item.qty <= 0) {
+                    cart = cart.filter(i => i.id !== id);
+                }
+            }
+            if (cart.length === 0) {
+                closeCheckoutModal();
+            } else {
+                openCheckoutModal();
+            }
+            updateCartUI();
+        }
+
+        function closeCheckoutModal() {
+            document.getElementById('checkout-modal').classList.add('hidden');
+        }
+
+        // EXECUTE PAYMENT & WHATSAPP ROUTING
+        function executePayment(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('cust-name').value.trim();
+            const phone = document.getElementById('cust-phone').value.trim();
+            const address = document.getElementById('cust-address').value.trim();
+            const deliveryFee = parseInt(document.getElementById('delivery-zone').value);
+            const subtotal = cart.reduce((acc, i) => acc + (i.price * i.qty), 0);
+            const total = subtotal + deliveryFee;
+
+            const ref = `DG-MEIRAN-${Date.now()}`;
+
+            // Paystack Inline Trigger
+            const handler = PaystackPop.setup({
+                key: PAYSTACK_PUBLIC_KEY,
+                email: `${phone}@dishgallery.internal`,
+                amount: total * 100, // Kobo
+                currency: "NGN",
+                ref: ref,
+                callback: function(response) {
+                    dispatchWhatsAppOrder(ref, name, phone, address, total);
+                },
+                onClose: function() {
+                    // DEMO FALLBACK: If test key fails, proceed with demo dispatch
+                    if (confirm("Demo Mode Notice: Simulate payment completion and trigger WhatsApp dispatch?")) {
+                        dispatchWhatsAppOrder(ref, name, phone, address, total);
+                    }
+                }
+            });
+
+            handler.openIframe();
+        }
+
+        function dispatchWhatsAppOrder(ref, name, phone, address, total) {
+            const itemsList = cart.map(i => `• ${i.qty}x ${i.name} (₦${(i.price * i.qty).toLocaleString()})`).join('\n');
+            
+            const message = `*NEW PAID ORDER #${ref.slice(-5)} [MEIRAN BRANCH]*\n\n` +
+                `*Customer:* ${name}\n` +
+                `*Phone:* ${phone}\n` +
+                `*Address / Landmark:* ${address}\n\n` +
+                `*Order Summary:*\n${itemsList}\n\n` +
+                `*Total Paid:* ₦${total.toLocaleString()} [Ref: ${ref}]\n\n` +
+                `_Dispatch immediately from 85 Meiran Road Kitchen._`;
+
+            const whatsappUrl = `https://wa.me/${MEIRAN_WHATSAPP_LINE}?text=${encodeURIComponent(message)}`;
+            window.location.href = whatsappUrl;
+        }
+
+        // ADMIN CONTROLS
+        function toggleAdminModal() {
+            document.getElementById('admin-modal').classList.toggle('hidden');
+        }
+
+        function verifyAdminPin() {
+            const pin = document.getElementById('admin-pin').value;
+            if (pin === '4092') {
+                document.getElementById('admin-auth-sec').classList.add('hidden');
+                document.getElementById('admin-controls-sec').classList.remove('hidden');
+                renderAdminStockControls();
+            } else {
+                alert('Invalid Manager PIN. Try demo PIN: 4092');
+            }
+        }
+
+        function renderAdminStockControls() {
+            const container = document.getElementById('admin-item-list');
+            container.innerHTML = products.map(p => `
+                <div class="flex justify-between items-center bg-black/50 p-2 rounded-lg border border-rose-950 text-xs">
+                    <span class="text-white font-semibold">${p.name}</span>
+                    <button onclick="toggleStockStatus('${p.id}')" class="px-2.5 py-1 rounded text-[10px] font-bold ${p.inStock ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-rose-950 text-rose-400 border border-rose-800'}">
+                        ${p.inStock ? 'IN STOCK' : 'SOLD OUT'}
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function toggleStockStatus(id) {
+            const product = products.find(p => p.id === id);
+            if (product) {
+                product.inStock = !product.inStock;
+                renderAdminStockControls();
+                renderProducts(products);
+            }
+        }
+    </script>
+</body>
+</html>
